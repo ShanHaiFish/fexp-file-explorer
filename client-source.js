@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.2.0 (DSH 动态 Cordis 插件)
+// 左侧文件浏览器 (fexp) — v1.2.1 (DSH 动态 Cordis 插件)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // Client 半区职责:
@@ -14,6 +14,10 @@
 //     conversation.input.dock 的隐藏桥组件捕获标准包 inputActions/useInput,
 //     点击后把文件引用 [文件名](绝对路径) 追加到聊天输入框草稿(不覆盖已有
 //     内容), 由用户编辑后发送, 方便告诉 AI 具体文件信息; 纯 Client 能力
+//
+// v1.2.1 修复:
+//   - 移除「已添加」状态: 按钮始终保持「添加到聊天」可用, 支持连续添加多个
+//     文件(输入框已可见引用, 无需重复状态提示)
 //
 // v1.1.0 新增:
 //   - 工具栏「在系统资源管理器中打开」按钮: 调用 Client workspaces.openPath
@@ -151,7 +155,6 @@ return {
       opening: false,
       inputActions: null,
       chatDraft: '',
-      chatAddedPath: null,
     }
 
     function setState(patch) {
@@ -230,7 +233,6 @@ return {
       const base = (state.chatDraft || '').trim()
       const next = base ? base + '\n' + ref : ref
       actions.setDraft(next)
-      setState({ chatAddedPath: fileInfo.path })
     }
 
     function InputBridge(props) {
@@ -428,7 +430,6 @@ return {
       const previewLoading = useStore((s) => s.previewLoading)
       const opening = useStore((s) => s.opening)
       const inputActions = useStore((s) => s.inputActions)
-      const chatAddedPath = useStore((s) => s.chatAddedPath)
 
       const wsPath = props.useSessions
         ? props.useSessions((s) => (s.byId[s.current] ? s.byId[s.current].cwd : undefined))
@@ -503,7 +504,6 @@ return {
       if (previewLoading) {
         previewEl = React.createElement('div', { className: 'fexp-preview fexp-preview-empty' }, '正在读取文件…')
       } else if (preview) {
-        const added = chatAddedPath === preview.path
         previewEl = React.createElement('div', { className: 'fexp-preview' },
           React.createElement('div', { className: 'fexp-preview-head' },
             React.createElement('span', { className: 'fexp-preview-name', title: preview.path }, preview.name),
@@ -511,10 +511,10 @@ return {
             React.createElement('button', {
               type: 'button', className: 'fexp-chat-btn',
               title: inputActions ? '将文件信息添加到聊天输入框' : '当前没有可用的会话输入框',
-              disabled: !inputActions || added,
+              disabled: !inputActions,
               onClick: () => addToChat(preview),
             }, React.createElement(IconChat, { size: 12 }),
-              React.createElement('span', null, added ? '已添加' : '添加到聊天')),
+              React.createElement('span', null, '添加到聊天')),
             React.createElement('button', {
               type: 'button', className: 'fexp-tbtn', title: '关闭预览',
               onClick: () => setState({ preview: null }),
