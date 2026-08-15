@@ -1,6 +1,6 @@
 {
   "schema": "dsh-dynamic-cordis-plugin",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "plugin": {
     "kind": "new",
     "idPrefix": "fexp"
@@ -30,6 +30,7 @@
     "v1.0.0 包含启动时序竞态修复：useStore 订阅后自愈同步 + sidebarWide 默认 true。",
     "v1.1.0 新增「在系统资源管理器中打开」工具栏按钮：Client 直接调用 workspaces.openPath（即 DSH 原生 host.openPath，Windows 走 Invoke-Item），不新增 Host RPC、不引入 spawn/网络能力；安全审查保持 WARN(33/300)。",
     "v1.2.0 新增预览区「添加到聊天」按钮（位于「关闭预览」左侧）：通过会话作用域插槽 conversation.input.dock 的隐藏桥捕获标准包 inputActions/useInput，把 [文件名](绝对路径) 追加到输入框草稿（不覆盖已有内容），由用户编辑后发送；纯 Client 能力，安全审查保持 WARN(33/300)。",
-    "v1.2.1 修复：移除「已添加」状态，按钮始终保持「添加到聊天」可用，支持连续多次添加文件（引用已直接可见于输入框，无需状态提示）。"
+    "v1.2.1 修复：移除「已添加」状态，按钮始终保持「添加到聊天」可用，支持连续多次添加文件（引用已直接可见于输入框，无需状态提示）。",
+    "v1.2.2 修复：「文件浏览」入口打开面板定位到上一个工作区目录——面板加载 effect 的 path===null 守卫导致之前浏览过（或进入过子目录）后关闭再打开、或切换工作区时都不重新加载。新增 boundWs 工作区绑定状态：打开面板/工作区切换时若 boundWs !== 当前 wsPath 则重新绑定并加载当前工作区目录，同一工作区重开仍保留上次浏览位置；「文件浏览」/「打开目录」统一走 openPanelFor，工具栏「当前工作区目录」统一走 bindWorkspace。Host 半区无改动。"
   ]
 }

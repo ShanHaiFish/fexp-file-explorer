@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.2.1 (DSH 动态 Cordis 插件)
+// 左侧文件浏览器 (fexp) — v1.2.2 (DSH 动态 Cordis 插件)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // Client 半区职责:
@@ -8,6 +8,16 @@
 //   - 会话标题栏「打开目录」按钮 (conversation.session.header.actions)
 //   - 左侧 320px 浏览面板 (shell.overlay): 面包屑导航、目录列表、文件预览
 //   - 深色主题适配: 按钮用内联样式(不受样式表影响), SVG 矢量图标
+//
+// v1.2.2 修复:
+//   - 「文件浏览」入口打开面板时定位到上一个工作区目录: 根因是面板加载
+//     effect 的 path === null 守卫——之前浏览过(或进入过子目录)后, 关闭
+//     再打开或切换工作区都不会重新加载, 直接展示旧目录。
+//     修复: 状态新增 boundWs(当前列表绑定的工作区 cwd), 打开面板或工作区
+//     切换时若 boundWs !== 当前 wsPath 则重新绑定并加载新工作区目录;
+//     同一工作区重开仍保留上次浏览位置。「文件浏览」/「打开目录」统一走
+//     openPanelFor, 工具栏「当前工作区目录」统一走 bindWorkspace, 保证
+//     绑定状态一致。
 //
 // v1.2.0 新增:
 //   - 预览区「添加到聊天」按钮(位于「关闭预览」左侧): 通过会话作用域插槽
@@ -146,6 +156,7 @@ return {
       open: false,
       sidebarWide: true,
       root: null,
+      boundWs: null,
       path: null,
       entries: null,
       loading: false,
@@ -208,6 +219,24 @@ return {
       }
       setState({ root: res.path })
       await loadDir(res.path)
+    }
+
+    // 把当前列表重新绑定到指定工作区目录: 重置 root/path/entries 后加载。
+    // 用于「打开目录」「文件浏览」打开面板及切换工作区时的自动重定位。
+    function bindWorkspace(wsPath) {
+      setState({ root: wsPath, boundWs: wsPath, path: null, entries: null, preview: null })
+      loadDir(wsPath)
+    }
+
+    // 统一打开面板入口: 有当前工作区则绑定并加载, 没有则回退到根目录。
+    function openPanelFor(wsPath) {
+      if (wsPath) {
+        setState({ open: true })
+        bindWorkspace(wsPath)
+      } else {
+        setState({ open: true, boundWs: null })
+        openRoot()
+      }
     }
 
     async function openFile(entry, dirPath) {
@@ -378,9 +407,7 @@ return {
           setState({ open: false })
           return
         }
-        setState({ open: true, root: wsPath || null })
-        if (wsPath) loadDir(wsPath)
-        else openRoot()
+        openPanelFor(wsPath)
       }
       return React.createElement('button', {
         type: 'button',
@@ -397,9 +424,12 @@ return {
       return null
     }
 
-    function TopToggle() {
+    function TopToggle(props) {
       const open = useStore((s) => s.open)
       const wide = useStore((s) => s.sidebarWide)
+      const wsPath = props.useSessions
+        ? props.useSessions((s) => (s.byId[s.current] ? s.byId[s.current].cwd : undefined))
+        : undefined
       if (!wide) return null
       const style = Object.assign({}, open ? btnActive : btnBase, {
         position: 'fixed',
@@ -414,7 +444,13 @@ return {
         style: style,
         title: '文件浏览',
         'aria-label': '文件浏览',
-        onClick: () => setState({ open: !open }),
+        onClick: () => {
+          if (open) {
+            setState({ open: false })
+            return
+          }
+          openPanelFor(wsPath)
+        },
       }, React.createElement(IconFolder, { size: 14 }),
         React.createElement('span', null, '文件浏览'))
     }
@@ -437,13 +473,17 @@ return {
 
       React.useEffect(() => {
         if (!open) return
-        if (path === null && !loading) {
-          if (wsPath) {
-            setState({ root: wsPath })
+        if (wsPath) {
+          if (state.boundWs !== wsPath) {
+            // 首次打开或工作区已切换: 重新绑定到当前工作区并加载,
+            // 避免展示上一个工作区的旧目录。
+            setState({ root: wsPath, boundWs: wsPath, path: null, entries: null, preview: null })
             loadDir(wsPath)
-          } else {
-            openRoot()
+          } else if (path === null && !loading) {
+            loadDir(wsPath)
           }
+        } else if (path === null && !loading) {
+          openRoot()
         }
       }, [open, wsPath])
 
@@ -535,7 +575,7 @@ return {
         React.createElement('div', { className: 'fexp-toolbar' },
           React.createElement('button', {
             type: 'button', className: 'fexp-tbtn', title: '当前工作区目录', disabled: !wsPath,
-            onClick: () => { if (wsPath) { setState({ root: wsPath }); loadDir(wsPath) } },
+            onClick: () => { if (wsPath) bindWorkspace(wsPath) },
           }, React.createElement(IconWorkspace, null)),
           React.createElement('button', {
             type: 'button', className: 'fexp-tbtn', title: '回到根目录', disabled: !root,
@@ -582,7 +622,7 @@ return {
 
     slots.inject('shell.overlay', () => slots.register(
       { name: 'shell.overlay', id: 'fexp-top-toggle', order: 5 },
-      () => React.createElement(TopToggle, null),
+      (props) => React.createElement(TopToggle, { useSessions: props && props.useSessions }),
     ))
 
     slots.inject('shell.overlay', () => slots.register(
