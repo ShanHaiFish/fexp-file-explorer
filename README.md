@@ -14,10 +14,12 @@ DSH 动态 Cordis 插件 —— 在左侧工作区浏览和打开目录及文件
   - 目录在前、文件在后, 文件显示大小; 点击目录进入、点击文件预览
   - 面包屑任意层级跳转; 工具栏: 当前工作区 / 回到根目录 / 上一级 / 刷新 / **在系统资源管理器中打开**
   - 面板头部**关闭面板**、预览区**关闭预览**按钮
-  - 全部图标使用 **Lucide 官方图标库**(v1.3.0, lucide.dev, ISC 许可)的
-    SVG path: 关闭面板=panel-left-close、当前工作区=briefcase、根目录=house、
-    上一级=folder-up、刷新=refresh-cw、资源管理器打开=folder-open、关闭预览=x,
-    语义直观, 与 stroke 风格统一
+  - 全部图标使用 **Google Material Icons 官方图标库**(v1.4.0,
+    fonts.google.com/icons, Apache 2.0 许可)的 SVG path, 实心填充风格,
+    与 Chrome/Android 大厂视觉一致: 关闭面板=keyboard_double_arrow_left(«,
+    与 VS Code 侧栏收起一致)、当前工作区=workspaces、根目录=home、
+    上一级=arrow_upward、刷新=refresh、资源管理器打开=folder_open、
+    关闭预览=close, 小尺寸下依然清晰
   - 文件预览: 文本内容(默认 256KB 上限, 最大 1MB), 二进制/超限有明确提示
   - 预览头部: 文件名 / 大小 / **[添加到聊天]** / 关闭预览
 - **在系统资源管理器中打开**(v1.1.0): 浏览面板工具栏最右侧按钮, 一键用系统
@@ -63,11 +65,15 @@ DSH 动态 Cordis 插件 —— 在左侧工作区浏览和打开目录及文件
   `.fexp-entry-btn-active`, 颜色全部走主题 CSS 变量(`label-primary` 文字、
   `bg-layer-1/2` 背景、`border-l2` 边框、`brand-primary` 激活态), 深浅色及
   任意主题自动适配, 附 hover 反馈。
-- **图标库(v1.3.0)**: 面板与工具栏图标改用 Lucide 官方图标
-  (https://lucide.dev, ISC 许可, lucide-static v1.31.0) 的 SVG path,
-  与 `svgIcon` 包装(stroke 风格, 24x24 viewBox)完全兼容: 关闭面板
-  panel-left-close、当前工作区 briefcase、回到根目录 house、上一级 folder-up、
-  刷新 refresh-cw、资源管理器打开 folder-open、关闭预览 x。
+- **图标库(v1.4.0)**: 面板与工具栏图标改用 Google Material Icons 官方库
+  (https://fonts.google.com/icons, Apache 2.0 许可,
+  @material-design-icons/svg outlined 变体) 的 SVG path; 实心填充渲染
+  (`fill="currentColor"`, 无 stroke), 默认尺寸 16px, 小尺寸下清晰锐利:
+  关闭面板 keyboard_double_arrow_left(«, 与 VS Code 侧栏收起一致)、
+  当前工作区 workspaces、回到根目录 home、上一级 arrow_upward、
+  刷新 refresh(Chrome/Android 同款)、资源管理器打开 folder_open、
+  关闭预览 close、文件/文件夹/聊天 description/folder/chat。
+  前版(v1.3.0)的 Lucide 线性图标已取代。
 - **安全审查**: WARN 级(33/300), 仅涉及已声明的 fs 文件系统访问与常规 RPC,
   无网络/spawn; v1.1.0/v1.2.0/v1.2.3 审查结果与 v1.0.0 持平。
 
@@ -90,7 +96,8 @@ DSH 动态 Cordis 插件 —— 在左侧工作区浏览和打开目录及文件
 
 | 版本 | 说明 |
 | --- | --- |
-| v1.3.0 | 图标全部改用 Lucide 官方图标库(lucide.dev, ISC 许可): 关闭面板=panel-left-close、当前工作区=briefcase、根目录=house、上一级=folder-up、刷新=refresh-cw、资源管理器打开=folder-open、关闭预览=x, 语义更直观; Host 无改动, 安全审查持平 WARN(33/300) |
+| v1.4.0 | 图标整体改用 Google Material Icons 官方库(Apache 2.0): 实心填充风格小尺寸下清晰, 符合 Chrome/Android 大厂标准; 关闭面板=keyboard_double_arrow_left(« 与 VS Code 一致)、工作区=workspaces、根目录=home、上一级=arrow_upward、刷新=refresh、资源管理器=folder_open、关闭预览=close; svgIcon 改 fill=currentColor, 默认尺寸 14→16px; Host 无改动, 安全审查持平 WARN(33/300) |
+| v1.3.0 | 图标改用 Lucide 官方图标库(lucide.dev, ISC 许可): 关闭面板=panel-left-close、当前工作区=briefcase、根目录=house、上一级=folder-up、刷新=refresh-cw、资源管理器打开=folder-open、关闭预览=x, 语义更直观(已被 v1.4.0 的 Material Icons 取代); Host 无改动 |
 | v1.2.3 | 修复「文件浏览」「打开目录」按钮浅色主题下文字看不清: 入口按钮改为 CSS 类并全部使用主题 CSS 变量(`label-primary` 文字 / `bg-layer-1/2` 背景 / `brand-primary` 激活态), 深浅色及任意主题自动适配保证对比, 补充 hover 反馈; Host 无改动 |
 | v1.2.2 | 修复「文件浏览」打开面板定位到上一个工作区目录: 面板加载 effect 的 `path===null` 守卫导致切换工作区后不重载; 新增 `boundWs` 工作区绑定, 打开面板/切换工作区时自动重定位到当前工作区目录, 双入口统一走 `openPanelFor`; Host 无改动 |
 | v1.2.1 | 修复「已添加」状态不合理: 按钮保持「添加到聊天」常显可用, 支持连续多次添加文件 |

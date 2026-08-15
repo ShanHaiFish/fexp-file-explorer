@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.3.0 (DSH 动态 Cordis 插件)
+// 左侧文件浏览器 (fexp) — v1.4.0 (DSH 动态 Cordis 插件)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // Client 半区职责:
@@ -10,16 +10,24 @@
 //   - 主题适配: 面板与按钮颜色全部使用主题 CSS 变量, 深浅色及任意主题
 //     下文字与背景都保持对比; SVG 矢量图标
 //
+// v1.4.0 更新:
+//   - 图标整体改用 Google Material Icons 官方图标库
+//     (https://fonts.google.com/icons, Apache 2.0 许可,
+//     @material-design-icons/svg outlined 变体), 实心填充风格, 小尺寸下
+//     依然清晰锐利, 与 Chrome/Android 等大厂产品视觉一致:
+//     · 关闭面板: keyboard_double_arrow_left(«, 收起左侧面板, 与 VS Code 一致)
+//     · 当前工作区目录: workspaces(Material 标准「工作区」图标)
+//     · 回到根目录: home
+//     · 上一级: arrow_upward
+//     · 刷新: refresh
+//     · 在系统资源管理器中打开: folder_open
+//     · 关闭预览: close
+//     · 目录/文件/添加到聊天: folder / description / chat
+//   - svgIcon 改为 fill=currentColor 实心渲染(去掉 stroke), 图标默认尺寸
+//     从 14px 提到 16px, 更清晰。
+//
 // v1.3.0 新增:
-//   - 图标全部改用 Lucide 官方图标库 (https://lucide.dev, ISC 许可,
-//     lucide-static v1.31.0) 的 path, 语义更直观:
-//     · 关闭面板: lucide panel-left-close(面板+左箭头, 收起左侧面板)
-//     · 当前工作区目录: lucide briefcase(公文包)
-//     · 回到根目录: lucide house(标准房子)
-//     · 上一级: lucide folder-up(文件夹+上箭头)
-//     · 刷新: lucide refresh-cw(完整循环箭头)
-//     · 在系统资源管理器中打开: lucide folder-open(打开的文件夹)
-//     · 关闭预览: lucide x(标准关闭)
+//   - 图标改用 Lucide 官方图标库 path(已被 v1.4.0 的 Material Icons 取代)。
 //
 // v1.2.3 修复:
 //   - 「文件浏览」「打开目录」按钮在浅色主题下文字看不清: 根因是按钮颜色
@@ -368,71 +376,66 @@ return {
 
     function svgIcon(size, children) {
       return React.createElement('svg', {
-        width: size || 14, height: size || 14, viewBox: '0 0 24 24',
-        fill: 'none', stroke: 'currentColor', strokeWidth: 2,
-        strokeLinecap: 'round', strokeLinejoin: 'round',
-        style: { flexShrink: 0 },
+        width: size || 16, height: size || 16, viewBox: '0 0 24 24',
+        fill: 'currentColor',
+        style: { flexShrink: 0, display: 'block' },
       }, children)
     }
+    // 全部图标 path 来自 Google Material Icons 官方库 (Apache 2.0 许可,
+    // @material-design-icons/svg outlined 变体, https://fonts.google.com/icons),
+    // 实心填充风格, 小尺寸下依然清晰, 与 Chrome/Android 大厂产品视觉一致。
     function IconFolder(props) {
+      // material folder
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' }))
+        React.createElement('path', { d: 'm9.17 6 2 2H20v10H4V6h5.17M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z' }))
     }
     function IconFile(props) {
+      // material description: 文档图标, 表示普通文件。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
-        React.createElement('polyline', { points: '14 2 14 8 20 8' }))
+        React.createElement('path', { d: 'M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z' }))
     }
-    // 以下图标 path 均来自 Lucide 官方图标库 (https://lucide.dev, ISC 许可,
-    // lucide-static v1.31.0), 与上方 svgIcon 的 stroke 风格一致。
-    // house / briefcase / folder-up / refresh-cw / folder-open / panel-left-close。
     function IconHome(props) {
+      // material home: 回到根目录。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8' }),
-        React.createElement('path', { d: 'M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' }))
+        React.createElement('path', { d: 'm12 5.69 5 4.5V18h-2v-6H9v6H7v-7.81l5-4.5M12 3 2 12h3v8h6v-6h2v6h6v-8h3L12 3z' }))
     }
     function IconWorkspace(props) {
-      // lucide briefcase: 公文包, 表示当前工作区目录。
+      // material workspaces: Material 标准「工作区」图标(三组圆点),
+      // 表示定位到当前工作区目录。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' }),
-        React.createElement('rect', { width: 20, height: 14, x: 2, y: 6, rx: 2 }))
+        React.createElement('path', { d: 'M6 15c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2m0-2c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm6-8c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2m0-2C9.8 3 8 4.8 8 7s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm6 12c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2m0-2c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4z' }))
     }
     function IconUp(props) {
-      // lucide folder-up: 文件夹 + 上箭头, 表示上一级目录。
+      // material arrow_upward: 上一级。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z' }),
-        React.createElement('path', { d: 'M12 10v6' }),
-        React.createElement('path', { d: 'm9 13 3-3 3 3' }))
+        React.createElement('path', { d: 'm4 12 1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z' }))
     }
     function IconRefresh(props) {
-      // lucide refresh-cw: 完整循环箭头。
+      // material refresh: 刷新(Chrome/Android 同款弧线箭头)。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8' }),
-        React.createElement('path', { d: 'M21 3v5h-5' }),
-        React.createElement('path', { d: 'M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16' }),
-        React.createElement('path', { d: 'M8 16H3v5' }))
+        React.createElement('path', { d: 'M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z' }))
     }
     function IconClose(props) {
-      // lucide x: 标准关闭, 用于「关闭预览」。
+      // material close: 标准关闭 X, 用于「关闭预览」。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M18 6 6 18' }),
-        React.createElement('path', { d: 'm6 6 12 12' }))
+        React.createElement('path', { d: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z' }))
     }
     function IconFolderOpen(props) {
-      // lucide folder-open: 打开的文件夹, 表示在系统资源管理器中打开当前目录。
+      // material folder_open: 在系统资源管理器中打开当前目录。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'm6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2' }))
+        React.createElement('path', { d: 'M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z' }))
     }
     function IconPanelClose(props) {
-      // lucide panel-left-close: 面板 + 左箭头, 表示收起/关闭左侧面板。
+      // material keyboard_double_arrow_left («): 收起左侧面板, 与 VS Code
+      // 侧栏收起图标一致。
       return svgIcon(props && props.size,
-        React.createElement('rect', { width: 18, height: 18, x: 3, y: 3, rx: 2 }),
-        React.createElement('path', { d: 'M9 3v18' }),
-        React.createElement('path', { d: 'm16 15-3-3 3-3' }))
+        React.createElement('path', { d: 'M17.59 18 19 16.59 14.42 12 19 7.41 17.59 6l-6 6z' }),
+        React.createElement('path', { d: 'm11 18 1.41-1.41L7.83 12l4.58-4.59L11 6l-6 6z' }))
     }
     function IconChat(props) {
+      // material chat: 添加到聊天。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }))
+        React.createElement('path', { d: 'M4 4h16v12H5.17L4 17.17V4m0-2c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2H4zm2 10h8v2H6v-2zm0-3h12v2H6V9zm0-3h12v2H6V6z' }))
     }
 
     function HeaderToggle(props) {
@@ -452,7 +455,7 @@ return {
         className: open ? 'fexp-entry-btn fexp-entry-btn-active' : 'fexp-entry-btn',
         title: '打开当前工作区目录',
         onClick: onClick,
-      }, React.createElement(IconFolder, { size: 14 }),
+      }, React.createElement(IconFolder, { size: 16 }),
         React.createElement('span', null, '打开目录'))
     }
 
@@ -490,7 +493,7 @@ return {
           }
           openPanelFor(wsPath)
         },
-      }, React.createElement(IconFolder, { size: 14 }),
+      }, React.createElement(IconFolder, { size: 16 }),
         React.createElement('span', null, '文件浏览'))
     }
 
@@ -592,7 +595,7 @@ return {
               title: inputActions ? '将文件信息添加到聊天输入框' : '当前没有可用的会话输入框',
               disabled: !inputActions,
               onClick: () => addToChat(preview),
-            }, React.createElement(IconChat, { size: 12 }),
+            }, React.createElement(IconChat, { size: 13 }),
               React.createElement('span', null, '添加到聊天')),
             React.createElement('button', {
               type: 'button', className: 'fexp-tbtn', title: '关闭预览',
@@ -605,7 +608,7 @@ return {
 
       return React.createElement('div', { className: 'fexp-panel' },
         React.createElement('div', { className: 'fexp-head' },
-          React.createElement('span', { className: 'fexp-head-icon' }, React.createElement(IconFolder, { size: 15 })),
+          React.createElement('span', { className: 'fexp-head-icon' }, React.createElement(IconFolder, { size: 16 })),
           React.createElement('span', { className: 'fexp-head-title' }, '文件浏览'),
           React.createElement('button', {
             type: 'button', className: 'fexp-tbtn', title: '关闭面板',
