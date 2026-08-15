@@ -1,0 +1,57 @@
+# 左侧文件浏览器 (fexp)
+
+DSH 动态 Cordis 插件 —— 在左侧工作区浏览和打开目录及文件。
+
+## 功能
+
+- **双入口**(均为 SVG 矢量图标, 深色主题适配, 内联样式保证可见):
+  - 侧栏顶部「工作区」标题行右侧的「文件浏览」胶囊按钮(宽栏时显示)
+  - 会话标题栏「打开目录」按钮
+- **浏览面板**(点击任意入口滑出, 320px, 覆盖左侧区域):
+  - 自动定位到**当前工作区目录**(当前会话 cwd, 如 `dsh demo`)
+  - 目录在前、文件在后, 文件显示大小; 点击目录进入、点击文件预览
+  - 面包屑任意层级跳转; 工具栏: 当前工作区 / 回到根目录 / 上一级 / 刷新
+  - 文件预览: 文本内容(默认 256KB 上限, 最大 1MB), 二进制/超限有明确提示
+
+## 文件结构
+
+| 文件 | 说明 |
+| --- | --- |
+| `host-source.js` | cordis_define 的 `code.host` 函数体原文(Host 半区 RPC) |
+| `client-source.js` | cordis_define 的 `code.client` 函数体原文(Client 半区 UI) |
+| `manifest.json` | 插件元数据 + 恢复定义参数(plugin/name/purpose) |
+
+## 技术要点
+
+- **Host 半区**: 通过 `harness.handle` 暴露三个 Package-private RPC:
+  `default-root` / `list-dir` / `read-file`, 底层使用 DSH 的 `fs` 服务
+  (resolve/listDir/stat/readText) 与 `sandboxPolicy.workspaceRoot`。
+- **Client 半区**: 全部使用增量插槽(`shell.overlay`、
+  `conversation.session.header.actions`、`sidebar.footer.action`), 不替换任何
+  内置 UI; 纯 JS + `React.createElement`, 无 JSX/TS。
+- **竞态修复(v1.0.0)**: `useStore` 订阅后立即自愈同步当前状态, 避免"探针写入
+  早于订阅导致更新丢失"的启动时序竞态; `sidebarWide` 默认 `true`, 探针异常时
+  顶部按钮仍可见。
+- **安全审查**: WARN 级(33/300), 仅涉及已声明的 fs 文件系统访问, 无网络/spawn。
+
+## 恢复 / 重建步骤(DSH 重启后)
+
+动态 Cordis 插件不跨 DSH 进程存续, 重启后按以下步骤一键重建:
+
+1. 让助手(或你自己)读取本目录的 `host-source.js` 与 `client-source.js` 内容;
+2. 调用 `cordis_define`, 参数为:
+   - `plugin`: `{ "kind": "new", "idPrefix": "fexp" }`
+   - `name`: `左侧文件浏览器`
+   - `purpose`: manifest.json 中的 `purpose` 字段
+   - `code.host`: host-source.js 的完整内容(函数体)
+   - `code.client`: client-source.js 的完整内容(函数体)
+3. 调用 `cordis_run` 激活返回的 `pluginId`/`packageId`(首次需要批准)。
+
+一句话提示词: 「按 `fexp-file-explorer` 目录重建文件浏览器插件」。
+
+## 版本历史
+
+| 版本 | 说明 |
+| --- | --- |
+| v1.0.0 | 最终形态: 顶部「文件浏览」+ 标题栏「打开目录」双入口; 内联样式深色适配; 启动竞态修复(订阅自愈 + 默认宽栏) |
+| (pkg-1~pkg-7) | 演进过程: 侧栏底部按钮 → 顶部浮层 → 标签胶囊 → 内联样式可见性修复 → 移除底部按钮与诊断条 |
