@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.1.0 (DSH 动态 Cordis 插件)
+// 左侧文件浏览器 (fexp) — v1.2.0 (DSH 动态 Cordis 插件)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // Client 半区职责:
@@ -8,6 +8,12 @@
 //   - 会话标题栏「打开目录」按钮 (conversation.session.header.actions)
 //   - 左侧 320px 浏览面板 (shell.overlay): 面包屑导航、目录列表、文件预览
 //   - 深色主题适配: 按钮用内联样式(不受样式表影响), SVG 矢量图标
+//
+// v1.2.0 新增:
+//   - 预览区「添加到聊天」按钮(位于「关闭预览」左侧): 通过会话作用域插槽
+//     conversation.input.dock 的隐藏桥组件捕获标准包 inputActions/useInput,
+//     点击后把文件引用 [文件名](绝对路径) 追加到聊天输入框草稿(不覆盖已有
+//     内容), 由用户编辑后发送, 方便告诉 AI 具体文件信息; 纯 Client 能力
 //
 // v1.1.0 新增:
 //   - 工具栏「在系统资源管理器中打开」按钮: 调用 Client workspaces.openPath
@@ -118,6 +124,17 @@ return {
         align-items: center; justify-content: center;
         color: var(--dsw-alias-label-secondary, #9aa4b2); font-size: 12px;
       }
+
+      .fexp-chat-btn {
+        display: inline-flex; align-items: center; gap: 4px;
+        height: 22px; padding: 0 8px; margin-left: 2px;
+        border: 1px solid rgba(124,176,255,.45); border-radius: 5px;
+        background: rgba(124,176,255,.12);
+        color: var(--dsw-alias-brand-primary, #7cb0ff);
+        font-size: 11.5px; white-space: nowrap; cursor: pointer;
+      }
+      .fexp-chat-btn:hover:not(:disabled) { background: rgba(124,176,255,.24); }
+      .fexp-chat-btn:disabled { opacity: .45; cursor: default; }
     `)
 
     const listeners = new Set()
@@ -132,6 +149,9 @@ return {
       preview: null,
       previewLoading: false,
       opening: false,
+      inputActions: null,
+      chatDraft: '',
+      chatAddedPath: null,
     }
 
     function setState(patch) {
@@ -196,11 +216,38 @@ return {
         setState({ error: (res && res.error) || '无法打开文件' })
         return
       }
-      setState({ preview: { path: full, name: entry.name, content: res.content, bytes: res.bytes } })
+      setState({ preview: { path: (res.path || full), name: entry.name, content: res.content, bytes: res.bytes } })
     }
 
     function joinPath(dir, name) {
       return String(dir).replace(/[\\/]+$/, '') + '/' + name
+    }
+
+    function addToChat(fileInfo) {
+      const actions = state.inputActions
+      if (!actions || !fileInfo || !fileInfo.path) return
+      const ref = '[' + fileInfo.name + '](' + fileInfo.path + ')'
+      const base = (state.chatDraft || '').trim()
+      const next = base ? base + '\n' + ref : ref
+      actions.setDraft(next)
+      setState({ chatAddedPath: fileInfo.path })
+    }
+
+    function InputBridge(props) {
+      // 会话作用域隐藏桥: 捕获标准包 inputActions / useInput, 供面板使用。
+      const useInput = props.useInput
+      const actions = props.inputActions
+      const draft = useInput ? useInput((s) => s.draft) : undefined
+      React.useEffect(() => {
+        setState({ inputActions: actions || null })
+        return () => {
+          if (actions && state.inputActions === actions) setState({ inputActions: null })
+        }
+      }, [actions])
+      React.useEffect(() => {
+        setState({ chatDraft: draft || '' })
+      }, [draft])
+      return null
     }
 
     async function openInExplorer(p) {
@@ -293,6 +340,10 @@ return {
         React.createElement('polyline', { points: '15 3 21 3 21 9' }),
         React.createElement('line', { x1: '10', y1: '14', x2: '21', y2: '3' }))
     }
+    function IconChat(props) {
+      return svgIcon(props && props.size,
+        React.createElement('path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }))
+    }
 
     const btnBase = {
       display: 'inline-flex',
@@ -376,6 +427,8 @@ return {
       const preview = useStore((s) => s.preview)
       const previewLoading = useStore((s) => s.previewLoading)
       const opening = useStore((s) => s.opening)
+      const inputActions = useStore((s) => s.inputActions)
+      const chatAddedPath = useStore((s) => s.chatAddedPath)
 
       const wsPath = props.useSessions
         ? props.useSessions((s) => (s.byId[s.current] ? s.byId[s.current].cwd : undefined))
@@ -450,10 +503,18 @@ return {
       if (previewLoading) {
         previewEl = React.createElement('div', { className: 'fexp-preview fexp-preview-empty' }, '正在读取文件…')
       } else if (preview) {
+        const added = chatAddedPath === preview.path
         previewEl = React.createElement('div', { className: 'fexp-preview' },
           React.createElement('div', { className: 'fexp-preview-head' },
             React.createElement('span', { className: 'fexp-preview-name', title: preview.path }, preview.name),
             React.createElement('span', { className: 'fexp-preview-size' }, fmtSize(preview.bytes)),
+            React.createElement('button', {
+              type: 'button', className: 'fexp-chat-btn',
+              title: inputActions ? '将文件信息添加到聊天输入框' : '当前没有可用的会话输入框',
+              disabled: !inputActions || added,
+              onClick: () => addToChat(preview),
+            }, React.createElement(IconChat, { size: 12 }),
+              React.createElement('span', null, added ? '已添加' : '添加到聊天')),
             React.createElement('button', {
               type: 'button', className: 'fexp-tbtn', title: '关闭预览',
               onClick: () => setState({ preview: null }),
@@ -509,6 +570,14 @@ return {
     slots.inject('conversation.session.header.actions', () => slots.register(
       { name: 'conversation.session.header.actions', id: 'fexp-header-toggle', order: 30, label: '打开目录' },
       (props) => React.createElement(HeaderToggle, { useSessions: props && props.useSessions }),
+    ))
+
+    slots.inject('conversation.input.dock', () => slots.register(
+      { name: 'conversation.input.dock', id: 'fexp-input-bridge', order: 0, label: '文件浏览器输入桥' },
+      (props) => React.createElement(InputBridge, {
+        useInput: props && props.useInput,
+        inputActions: props && props.inputActions,
+      }),
     ))
 
     slots.inject('shell.overlay', () => slots.register(

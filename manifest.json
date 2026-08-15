@@ -1,12 +1,12 @@
 {
   "schema": "dsh-dynamic-cordis-plugin",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "plugin": {
     "kind": "new",
     "idPrefix": "fexp"
   },
   "name": "左侧文件浏览器",
-  "purpose": "在左侧工作区浏览目录与文件：侧栏顶部「文件浏览」+ 会话标题栏「打开目录」双入口，打开面板定位当前工作区目录，点击目录进入、点击文件预览内容；工具栏可一键在系统资源管理器中打开当前目录（DSH 原生 host.openPath，Windows 走 Invoke-Item）。CAPABILITIES: fs, rpc",
+  "purpose": "在左侧工作区浏览目录与文件：侧栏顶部「文件浏览」+ 会话标题栏「打开目录」双入口，打开面板定位当前工作区目录，点击目录进入、点击文件预览内容；工具栏可一键在系统资源管理器中打开当前目录（DSH 原生 host.openPath，Windows 走 Invoke-Item）；预览文件时可一键把文件引用 [文件名](绝对路径) 添加到聊天输入框草稿，方便告诉 AI 具体文件信息。CAPABILITIES: fs, rpc",
   "code": {
     "host": "./host-source.js",
     "client": "./client-source.js"
@@ -15,6 +15,7 @@
     { "name": "shell.overlay", "id": "fexp-top-toggle", "order": 5, "description": "侧栏顶部「文件浏览」胶囊按钮（宽栏时显示，定位在「工作区」标题行右侧）" },
     { "name": "shell.overlay", "id": "fexp-panel", "order": 10, "description": "左侧 320px 文件浏览面板" },
     { "name": "conversation.session.header.actions", "id": "fexp-header-toggle", "order": 30, "description": "会话标题栏「打开目录」按钮" },
+    { "name": "conversation.input.dock", "id": "fexp-input-bridge", "order": 0, "description": "隐藏输入桥（渲染 null）：捕获标准包 inputActions/useInput，供「添加到聊天」使用" },
     { "name": "sidebar.footer.action", "id": "fexp-wide-probe", "order": 6, "description": "隐藏的侧栏宽窄探针（渲染 null，仅报告 wide 状态）" }
   ],
   "rpc": [
@@ -27,6 +28,7 @@
     "恢复/重建时：用 cordis_define 以本文件的 plugin/name/purpose 与两个源码文件的内容重新定义（kind:new + idPrefix:fexp），再用 cordis_run 运行（首次需批准）。",
     "动态插件不跨 DSH 进程存续；重启 DSH 后需按 README.md 重新加载。",
     "v1.0.0 包含启动时序竞态修复：useStore 订阅后自愈同步 + sidebarWide 默认 true。",
-    "v1.1.0 新增「在系统资源管理器中打开」工具栏按钮：Client 直接调用 workspaces.openPath（即 DSH 原生 host.openPath，Windows 走 Invoke-Item），不新增 Host RPC、不引入 spawn/网络能力；安全审查保持 WARN(33/300)。"
+    "v1.1.0 新增「在系统资源管理器中打开」工具栏按钮：Client 直接调用 workspaces.openPath（即 DSH 原生 host.openPath，Windows 走 Invoke-Item），不新增 Host RPC、不引入 spawn/网络能力；安全审查保持 WARN(33/300)。",
+    "v1.2.0 新增预览区「添加到聊天」按钮（位于「关闭预览」左侧）：通过会话作用域插槽 conversation.input.dock 的隐藏桥捕获标准包 inputActions/useInput，把 [文件名](绝对路径) 追加到输入框草稿（不覆盖已有内容），由用户编辑后发送；纯 Client 能力，安全审查保持 WARN(33/300)。"
   ]
 }
