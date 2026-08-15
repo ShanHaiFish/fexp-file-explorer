@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.0.0 (DSH 动态 Cordis 插件)
+// 左侧文件浏览器 (fexp) — v1.1.0 (DSH 动态 Cordis 插件)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // Client 半区职责:
@@ -8,6 +8,11 @@
 //   - 会话标题栏「打开目录」按钮 (conversation.session.header.actions)
 //   - 左侧 320px 浏览面板 (shell.overlay): 面包屑导航、目录列表、文件预览
 //   - 深色主题适配: 按钮用内联样式(不受样式表影响), SVG 矢量图标
+//
+// v1.1.0 新增:
+//   - 工具栏「在系统资源管理器中打开」按钮: 调用 Client workspaces.openPath
+//     (DSH 原生 host.openPath, Windows 走 Invoke-Item), 在系统资源管理器中
+//     打开当前浏览的目录; 不新增 Host RPC, 不引入 spawn/网络能力
 //
 // v1.0.0 要点:
 //   - 修复启动时序竞态: useStore 订阅后立即自愈同步当前状态(避免探针写入
@@ -18,6 +23,7 @@ return {
   apply(ctx) {
     const slots = ctx.get('slots')
     if (slots === undefined) return
+    const workspaces = ctx.get('workspaces')
 
     styles.insert(`
       .fexp-panel {
@@ -125,6 +131,7 @@ return {
       error: null,
       preview: null,
       previewLoading: false,
+      opening: false,
     }
 
     function setState(patch) {
@@ -194,6 +201,18 @@ return {
 
     function joinPath(dir, name) {
       return String(dir).replace(/[\\/]+$/, '') + '/' + name
+    }
+
+    async function openInExplorer(p) {
+      if (!workspaces || !p || state.opening) return
+      setState({ opening: true, error: null })
+      try {
+        await workspaces.openPath(p)
+      } catch (err) {
+        setState({ error: String((err && err.message) || err) })
+      } finally {
+        setState({ opening: false })
+      }
     }
 
     function parentOf(p) {
@@ -267,6 +286,12 @@ return {
       return svgIcon(props && props.size,
         React.createElement('path', { d: 'M18 6 6 18' }),
         React.createElement('path', { d: 'm6 6 12 12' }))
+    }
+    function IconExternal(props) {
+      return svgIcon(props && props.size,
+        React.createElement('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
+        React.createElement('polyline', { points: '15 3 21 3 21 9' }),
+        React.createElement('line', { x1: '10', y1: '14', x2: '21', y2: '3' }))
     }
 
     const btnBase = {
@@ -350,6 +375,7 @@ return {
       const error = useStore((s) => s.error)
       const preview = useStore((s) => s.preview)
       const previewLoading = useStore((s) => s.previewLoading)
+      const opening = useStore((s) => s.opening)
 
       const wsPath = props.useSessions
         ? props.useSessions((s) => (s.byId[s.current] ? s.byId[s.current].cwd : undefined))
@@ -461,7 +487,13 @@ return {
           React.createElement('button', {
             type: 'button', className: 'fexp-tbtn', title: '刷新', disabled: !path,
             onClick: () => { if (path) loadDir(path) },
-          }, React.createElement(IconRefresh, null))),
+          }, React.createElement(IconRefresh, null)),
+          React.createElement('button', {
+            type: 'button', className: 'fexp-tbtn',
+            title: workspaces ? '在系统资源管理器中打开当前目录' : '当前环境不支持在系统资源管理器中打开',
+            disabled: !path || !workspaces || opening,
+            onClick: () => openInExplorer(path),
+          }, React.createElement(IconExternal, null))),
         React.createElement('div', { className: 'fexp-crumbs' },
           crumbEls.length ? crumbEls : React.createElement('span', { className: 'fexp-crumb' }, '…')),
         errorEl,

@@ -1,12 +1,12 @@
 {
   "schema": "dsh-dynamic-cordis-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "plugin": {
     "kind": "new",
     "idPrefix": "fexp"
   },
   "name": "左侧文件浏览器",
-  "purpose": "在左侧工作区浏览目录与文件：侧栏顶部「文件浏览」+ 会话标题栏「打开目录」双入口，打开面板定位当前工作区目录，点击目录进入、点击文件预览内容。CAPABILITIES: fs, rpc",
+  "purpose": "在左侧工作区浏览目录与文件：侧栏顶部「文件浏览」+ 会话标题栏「打开目录」双入口，打开面板定位当前工作区目录，点击目录进入、点击文件预览内容；工具栏可一键在系统资源管理器中打开当前目录（DSH 原生 host.openPath，Windows 走 Invoke-Item）。CAPABILITIES: fs, rpc",
   "code": {
     "host": "./host-source.js",
     "client": "./client-source.js"
@@ -26,6 +26,7 @@
     "host 源码在 host-source.js，client 源码在 client-source.js，均为 cordis_define 的 code 函数体原文。",
     "恢复/重建时：用 cordis_define 以本文件的 plugin/name/purpose 与两个源码文件的内容重新定义（kind:new + idPrefix:fexp），再用 cordis_run 运行（首次需批准）。",
     "动态插件不跨 DSH 进程存续；重启 DSH 后需按 README.md 重新加载。",
-    "v1.0.0 包含启动时序竞态修复：useStore 订阅后自愈同步 + sidebarWide 默认 true。"
+    "v1.0.0 包含启动时序竞态修复：useStore 订阅后自愈同步 + sidebarWide 默认 true。",
+    "v1.1.0 新增「在系统资源管理器中打开」工具栏按钮：Client 直接调用 workspaces.openPath（即 DSH 原生 host.openPath，Windows 走 Invoke-Item），不新增 Host RPC、不引入 spawn/网络能力；安全审查保持 WARN(33/300)。"
   ]
 }
