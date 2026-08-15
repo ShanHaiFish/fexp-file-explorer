@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.2.3 (DSH 动态 Cordis 插件)
+// 左侧文件浏览器 (fexp) — v1.3.0 (DSH 动态 Cordis 插件)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // Client 半区职责:
@@ -9,6 +9,17 @@
 //   - 左侧 320px 浏览面板 (shell.overlay): 面包屑导航、目录列表、文件预览
 //   - 主题适配: 面板与按钮颜色全部使用主题 CSS 变量, 深浅色及任意主题
 //     下文字与背景都保持对比; SVG 矢量图标
+//
+// v1.3.0 新增:
+//   - 图标全部改用 Lucide 官方图标库 (https://lucide.dev, ISC 许可,
+//     lucide-static v1.31.0) 的 path, 语义更直观:
+//     · 关闭面板: lucide panel-left-close(面板+左箭头, 收起左侧面板)
+//     · 当前工作区目录: lucide briefcase(公文包)
+//     · 回到根目录: lucide house(标准房子)
+//     · 上一级: lucide folder-up(文件夹+上箭头)
+//     · 刷新: lucide refresh-cw(完整循环箭头)
+//     · 在系统资源管理器中打开: lucide folder-open(打开的文件夹)
+//     · 关闭预览: lucide x(标准关闭)
 //
 // v1.2.3 修复:
 //   - 「文件浏览」「打开目录」按钮在浅色主题下文字看不清: 根因是按钮颜色
@@ -372,36 +383,52 @@ return {
         React.createElement('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
         React.createElement('polyline', { points: '14 2 14 8 20 8' }))
     }
+    // 以下图标 path 均来自 Lucide 官方图标库 (https://lucide.dev, ISC 许可,
+    // lucide-static v1.31.0), 与上方 svgIcon 的 stroke 风格一致。
+    // house / briefcase / folder-up / refresh-cw / folder-open / panel-left-close。
     function IconHome(props) {
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M3 10.5 12 3l9 7.5' }),
-        React.createElement('path', { d: 'M5 9.5V21h14V9.5' }))
+        React.createElement('path', { d: 'M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8' }),
+        React.createElement('path', { d: 'M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' }))
     }
     function IconWorkspace(props) {
+      // lucide briefcase: 公文包, 表示当前工作区目录。
       return svgIcon(props && props.size,
-        React.createElement('circle', { cx: '12', cy: '12', r: '7' }),
-        React.createElement('circle', { cx: '12', cy: '12', r: '2' }))
+        React.createElement('path', { d: 'M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' }),
+        React.createElement('rect', { width: 20, height: 14, x: 2, y: 6, rx: 2 }))
     }
     function IconUp(props) {
+      // lucide folder-up: 文件夹 + 上箭头, 表示上一级目录。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M12 19V5' }),
-        React.createElement('path', { d: 'm5 12 7-7 7 7' }))
+        React.createElement('path', { d: 'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z' }),
+        React.createElement('path', { d: 'M12 10v6' }),
+        React.createElement('path', { d: 'm9 13 3-3 3 3' }))
     }
     function IconRefresh(props) {
+      // lucide refresh-cw: 完整循环箭头。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M21 12a9 9 0 1 1-2.64-6.36' }),
-        React.createElement('polyline', { points: '21 3 21 9 15 9' }))
+        React.createElement('path', { d: 'M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8' }),
+        React.createElement('path', { d: 'M21 3v5h-5' }),
+        React.createElement('path', { d: 'M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16' }),
+        React.createElement('path', { d: 'M8 16H3v5' }))
     }
     function IconClose(props) {
+      // lucide x: 标准关闭, 用于「关闭预览」。
       return svgIcon(props && props.size,
         React.createElement('path', { d: 'M18 6 6 18' }),
         React.createElement('path', { d: 'm6 6 12 12' }))
     }
-    function IconExternal(props) {
+    function IconFolderOpen(props) {
+      // lucide folder-open: 打开的文件夹, 表示在系统资源管理器中打开当前目录。
       return svgIcon(props && props.size,
-        React.createElement('path', { d: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' }),
-        React.createElement('polyline', { points: '15 3 21 3 21 9' }),
-        React.createElement('line', { x1: '10', y1: '14', x2: '21', y2: '3' }))
+        React.createElement('path', { d: 'm6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2' }))
+    }
+    function IconPanelClose(props) {
+      // lucide panel-left-close: 面板 + 左箭头, 表示收起/关闭左侧面板。
+      return svgIcon(props && props.size,
+        React.createElement('rect', { width: 18, height: 18, x: 3, y: 3, rx: 2 }),
+        React.createElement('path', { d: 'M9 3v18' }),
+        React.createElement('path', { d: 'm16 15-3-3 3-3' }))
     }
     function IconChat(props) {
       return svgIcon(props && props.size,
@@ -583,7 +610,7 @@ return {
           React.createElement('button', {
             type: 'button', className: 'fexp-tbtn', title: '关闭面板',
             onClick: () => setState({ open: false }),
-          }, React.createElement(IconClose, null))),
+          }, React.createElement(IconPanelClose, null))),
         React.createElement('div', { className: 'fexp-toolbar' },
           React.createElement('button', {
             type: 'button', className: 'fexp-tbtn', title: '当前工作区目录', disabled: !wsPath,
@@ -606,7 +633,7 @@ return {
             title: workspaces ? '在系统资源管理器中打开当前目录' : '当前环境不支持在系统资源管理器中打开',
             disabled: !path || !workspaces || opening,
             onClick: () => openInExplorer(path),
-          }, React.createElement(IconExternal, null))),
+          }, React.createElement(IconFolderOpen, null))),
         React.createElement('div', { className: 'fexp-crumbs' },
           crumbEls.length ? crumbEls : React.createElement('span', { className: 'fexp-crumb' }, '…')),
         errorEl,
