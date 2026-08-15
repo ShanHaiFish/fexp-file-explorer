@@ -8,7 +8,9 @@
 双入口(侧栏顶部「文件浏览」胶囊 + 会话标题栏「打开目录」按钮)→ 320px 滑出面板,
 定位当前工作区目录,目录在前、文件在后,点击目录进入、点击文件预览文本内容。
 
-当前版本:`v1.0.0`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
+当前版本:`v1.2.1`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
+v1.1.0 起工具栏可一键在系统资源管理器中打开当前目录;v1.2.0 起预览文件时
+「添加到聊天」把文件引用 `[文件名](绝对路径)` 追加到聊天输入框草稿。
 
 ## 文件结构与职责
 
@@ -56,14 +58,21 @@
   `{ ok: true, ... }` / `{ ok: false, error, code }` 结构,错误信息来自
   `err.message`。根目录取 `sandboxPolicy.workspaceRoot`,兜底 `fs.resolve('.')`。
 - **Client 半区**:只用**增量插槽**(`shell.overlay`、`conversation.session.header.actions`、
-  `sidebar.footer.action`),绝不替换内置 UI;纯 JS + `React.createElement`,禁 JSX/TS;
-  内联样式保证深色主题下可见。调用 Host 用 `host.call(method, args)`,只传可序列化 JSON。
+  `sidebar.footer.action`、`conversation.input.dock`),绝不替换内置 UI;纯 JS +
+  `React.createElement`,禁 JSX/TS;内联样式保证深色主题下可见。调用 Host 用
+  `host.call(method, args)`,只传可序列化 JSON。
 - **安全红线**:只声明 `CAPABILITIES: fs, rpc`;不引入网络请求、不 spawn 进程;
-  新增 RPC 前先过 `plugin_security_review`,保持 WARN 级(≈33/300)。
-- **行为细节**(v1.0.0 已验证,改动需回归):
+  新增 RPC 前先过 `plugin_security_review`,保持 WARN 级(≈33/300);
+  优先复用 DSH 原生服务(如 `workspaces.openPath`)而非新增 Host RPC。
+- **行为细节**(v1.0.0~v1.2.1 已验证,改动需回归):
   - 文件预览文本默认上限 256KB,最大 1MB,超限返回 `FS_TOO_LARGE` 明确提示;
   - 启动时序竞态防护:`useStore` 订阅后立即自愈同步当前状态;`sidebarWide` 默认 `true`;
-  - 侧栏底部隐藏探针仅报告宽窄状态(渲染 null),不要让它产生可见 UI。
+  - 侧栏底部隐藏探针仅报告宽窄状态(渲染 null),不要让它产生可见 UI;
+  - 在系统资源管理器中打开(v1.1.0):Client 直接 `ctx.get('workspaces').openPath(path)`
+    (DSH 原生 host.openPath,Windows 走 Invoke-Item),不新增 Host RPC;
+  - 添加到聊天(v1.2.0/1.2.1):`conversation.input.dock` 插槽内的隐藏桥捕获标准包
+    `inputActions`(setDraft)与 `useInput`(草稿订阅),把 `[文件名](绝对路径)` 追加到
+    现有草稿、不覆盖;v1.2.1 起按钮保持常显、无「已添加」状态,支持连续多次添加。
 
 ## 版本管理约定
 
