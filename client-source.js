@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.2.2 (DSH 动态 Cordis 插件)
+// 左侧文件浏览器 (fexp) — v1.2.3 (DSH 动态 Cordis 插件)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // Client 半区职责:
@@ -7,7 +7,16 @@
 //     「工作区」标题行右侧/搜索图标左侧附近)
 //   - 会话标题栏「打开目录」按钮 (conversation.session.header.actions)
 //   - 左侧 320px 浏览面板 (shell.overlay): 面包屑导航、目录列表、文件预览
-//   - 深色主题适配: 按钮用内联样式(不受样式表影响), SVG 矢量图标
+//   - 主题适配: 面板与按钮颜色全部使用主题 CSS 变量, 深浅色及任意主题
+//     下文字与背景都保持对比; SVG 矢量图标
+//
+// v1.2.3 修复:
+//   - 「文件浏览」「打开目录」按钮在浅色主题下文字看不清: 根因是按钮颜色
+//     硬编码(文字 #e8edf3 近白、背景半透明灰), 浅色主题下无对比。
+//     修复: 入口按钮由内联样式改为 CSS 类, 颜色全部走主题变量——文字
+//     --dsw-alias-label-primary、背景 --dsw-alias-bg-layer-1/2、边框
+//     --dsw-alias-border-l2、激活态 --dsw-alias-brand-primary, 随任意
+//     主题(浅色/深色/其他)自动适配, 保证对比; 补充 hover 反馈。
 //
 // v1.2.2 修复:
 //   - 「文件浏览」入口打开面板时定位到上一个工作区目录: 根因是面板加载
@@ -149,6 +158,29 @@ return {
       }
       .fexp-chat-btn:hover:not(:disabled) { background: rgba(124,176,255,.24); }
       .fexp-chat-btn:disabled { opacity: .45; cursor: default; }
+
+      /* 双入口按钮(「文件浏览」/「打开目录」): 颜色全部走主题 CSS 变量,
+         保证浅色/深色及其他任意主题下文字与背景都有对比。 */
+      .fexp-entry-btn {
+        display: inline-flex; align-items: center; gap: 5px;
+        height: 28px; padding: 0 10px;
+        border: 1px solid var(--dsw-alias-border-l2, rgba(120,130,145,.45));
+        border-radius: 7px;
+        background: var(--dsw-alias-bg-layer-1, rgba(148,163,184,.14));
+        color: var(--dsw-alias-label-primary, #333a44);
+        font-size: 12px; white-space: nowrap; cursor: pointer;
+        box-sizing: border-box; margin: 2px;
+        transition: background .15s ease, border-color .15s ease, color .15s ease;
+      }
+      .fexp-entry-btn:hover {
+        border-color: var(--dsw-alias-brand-primary, rgba(124,176,255,.7));
+        background: var(--dsw-alias-bg-layer-2, rgba(148,163,184,.22));
+      }
+      .fexp-entry-btn-active {
+        color: var(--dsw-alias-brand-primary, #4c8dff);
+        border-color: var(--dsw-alias-brand-primary, #4c8dff);
+        background: var(--dsw-alias-bg-layer-1, rgba(148,163,184,.14));
+      }
     `)
 
     const listeners = new Set()
@@ -376,27 +408,6 @@ return {
         React.createElement('path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }))
     }
 
-    const btnBase = {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '5px',
-      height: '28px',
-      padding: '0 10px',
-      border: '1px solid rgba(148,163,184,.5)',
-      borderRadius: '7px',
-      background: 'rgba(148,163,184,.14)',
-      color: '#e8edf3',
-      fontSize: '12px',
-      whiteSpace: 'nowrap',
-      cursor: 'pointer',
-      boxSizing: 'border-box',
-      margin: '2px',
-    }
-    const btnActive = Object.assign({}, btnBase, {
-      color: '#7cb0ff',
-      borderColor: 'rgba(124,176,255,.8)',
-    })
-
     function HeaderToggle(props) {
       const open = useStore((s) => s.open)
       const wsPath = props.useSessions
@@ -411,7 +422,7 @@ return {
       }
       return React.createElement('button', {
         type: 'button',
-        style: open ? btnActive : btnBase,
+        className: open ? 'fexp-entry-btn fexp-entry-btn-active' : 'fexp-entry-btn',
         title: '打开当前工作区目录',
         onClick: onClick,
       }, React.createElement(IconFolder, { size: 14 }),
@@ -431,16 +442,17 @@ return {
         ? props.useSessions((s) => (s.byId[s.current] ? s.byId[s.current].cwd : undefined))
         : undefined
       if (!wide) return null
-      const style = Object.assign({}, open ? btnActive : btnBase, {
+      const style = {
         position: 'fixed',
         top: '126px',
         left: '70px',
         zIndex: 10,
         pointerEvents: 'auto',
         padding: '0 9px',
-      })
+      }
       return React.createElement('button', {
         type: 'button',
+        className: open ? 'fexp-entry-btn fexp-entry-btn-active' : 'fexp-entry-btn',
         style: style,
         title: '文件浏览',
         'aria-label': '文件浏览',
