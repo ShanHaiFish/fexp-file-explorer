@@ -1,15 +1,15 @@
-# 左侧文件浏览器 (fexp) v1.4.0
+# 左侧文件浏览器 (fexp) v1.5.0
 
 DSH 动态 Cordis 插件:在左侧工作区浏览目录与文件。双入口(侧栏顶部「文件浏览」胶囊 + 会话标题栏「打开目录」按钮)→ 320px 滑出面板,自动定位当前工作区目录,点击目录进入、点击文件预览文本内容;工具栏可一键在系统资源管理器中打开当前目录,预览时可把文件引用添加到聊天输入框。
 
-**v1.4.0 起图标使用 Google Material Icons 官方库**(实心填充风格,小尺寸下清晰,与 Chrome/Android 大厂视觉一致);v1.2.2 起切换工作区后面板自动重定位,不再展示上一个工作区的旧目录。
+**v1.5.0 起为静态 bundle 插件,随 profile 层栈自动加载**,不再需要每次重启 DSH 后重新 define/run;v1.4.0 起图标使用 Google Material Icons 官方库(实心填充风格,小尺寸下清晰,与 Chrome/Android 大厂视觉一致);v1.2.2 起切换工作区后面板自动重定位,不再展示上一个工作区的旧目录。
 
 ## 仓库内容
 
 | 路径 | 说明 |
 | --- | --- |
-| `host-source.js` | `cordis_define` 的 `code.host` 函数体原文(Host 半区 RPC) |
-| `client-source.js` | `cordis_define` 的 `code.client` 函数体原文(Client 半区 UI) |
+| `package.json` + `cordis.patch.yml` + `lib/` + `client/` | **静态 bundle**(推荐):`dsh plugin add` 安装后随 DSH 启动自动加载 |
+| `host-source.js` + `client-source.js` | 动态插件回退形态:无 bundle 能力的 profile 按 README 恢复流程加载 |
 | `manifest.json` | 插件元数据 + 恢复定义参数(plugin/name/purpose/version) |
 | `LICENSE` | MIT 许可证 |
 | `AGENTS.md` | 代理协作约定(重建流程/修改工作流/编码约定/版本管理) |
@@ -36,36 +36,51 @@ DSH 动态 Cordis 插件:在左侧工作区浏览目录与文件。双入口(侧
   收起一致)、当前工作区=workspaces、根目录=home、上一级=arrow_upward、刷新=
   refresh、资源管理器打开=folder_open、关闭预览=close
 
-## 安装 / 重建 (动态插件)
+## 安装(静态 bundle, 推荐)
 
-动态 Cordis 插件**不跨 DSH 进程存续**,重启后按以下步骤从源码重建:
+```sh
+dsh plugin --profile web add fexp-file-explorer
+```
 
-1. 让助手(或你自己)读取本目录的 `host-source.js` 与 `client-source.js` 内容;
-2. 调用 `cordis_define`, 参数为:
-   - `plugin`: `{ "kind": "new", "idPrefix": "fexp" }`
-   - `name`: `左侧文件浏览器`
-   - `purpose`: manifest.json 中的 `purpose` 字段(含 `CAPABILITIES: fs, rpc` 声明)
-   - `code.host`: host-source.js 的完整内容(函数体)
-   - `code.client`: client-source.js 的完整内容(函数体)
-3. 调用 `cordis_run` 激活返回的 `pluginId`/`packageId`(首次需要批准)。
+本地未发布时用 `file:` 指向本仓库(注意路径不能含空格):
 
-> 一句话提示词: 「按 `fexp-file-explorer` 目录重建文件浏览器插件」。
-> 动态形态不跨 DSH 进程存续,重启后需重新加载;这是动态插件与静态 bundle 的固有差异。
+```sh
+dsh plugin --profile web add file:/path/to/fexp-file-explorer
+```
 
-## v1.4.0 变更(相对 v1.3.0)
+重启 `dsh web` 后插件即自动生效:侧栏顶部出现「文件浏览」胶囊按钮,会话标题栏出现「打开目录」按钮,无需手动 define/run。
 
-- **图标改用 Google Material Icons 官方库**(Apache 2.0, `@material-design-icons/svg`
-  outlined 变体), 取代 v1.3.0 的 Lucide 线性图标: 实心填充渲染
-  (`svgIcon` 改 `fill="currentColor"`, 无 stroke), 小尺寸下清晰锐利, 符合
-  Chrome/Android 大厂产品视觉标准。
-- **图标尺寸**: 默认 14px → 16px(入口/头部 16px, 工具栏默认 16px)。
-- Host 半区无改动;安全审查保持 WARN(33/300)。
+## 安装(动态插件, 回退)
+
+仅用于没有 bundle 能力的 profile。步骤:
+
+1. 让 agent 读取 `host-source.js` 与 `client-source.js`。
+2. `cordis_define`:`plugin: { kind:"new", idPrefix:"fexp" }`,name/purpose 取
+   `manifest.json`(purpose 含 `CAPABILITIES: fs, rpc` 声明),`code.host` /
+   `code.client` 取两个源码文件的完整内容。
+3. `cordis_run` 激活;面板出现即成功。
+
+> 动态形态不跨 DSH 进程存续,重启后需重新加载;静态 bundle 形态无此限制。
+
+## v1.5.0 变更(相对 v1.4.0)
+
+- **静态 bundle 化**:新增 `package.json`(`dsh.bundle.patch` +
+  `dsh.client.platform: "web"`)、`cordis.patch.yml`、`lib/index.js`(Host 半区:
+  经 `webServer` 挂 `/fexp/default-root`、`/fexp/list-dir`、`/fexp/read-file`
+  三个 JSON 路由,复用 DSH `fs` 服务)、`client/client.js`(Client 半区:
+  `window.__ModuleLoader__.load` 注册,`host.call` → fetch 同源路由,
+  `styles.insert` → 自建 `<style>` 标签并打 `data-plugin` 书签)。
+- **自动加载**:随 profile 层栈启动即生效,不再需要每次重启 DSH 后手动
+  define/run;安装 `dsh plugin --profile web add fexp-file-explorer`。
+- `host-source.js` / `client-source.js` 保留为动态插件回退形态;安全审查持平
+  WARN(33/300)。
 
 ## 技术要点
 
-- **Host 半区**: 通过 `harness.handle` 暴露三个 Package-private RPC:
-  `default-root` / `list-dir` / `read-file`, 底层使用 DSH 的 `fs` 服务
-  (resolve/listDir/stat/readText) 与 `sandboxPolicy.workspaceRoot`。
+- **Host 半区**: 静态 bundle 形态在 `lib/index.js`,经 `webServer` 挂三个 JSON
+  路由(`/fexp/default-root` / `/fexp/list-dir` / `/fexp/read-file`), 底层使用
+  DSH 的 `fs` 服务(resolve/listDir/stat/readText) 与 `sandboxPolicy.workspaceRoot`;
+  动态回退形态在 `host-source.js`,通过 `harness.handle` 暴露同名三个 RPC。
 - **Client 半区**: 全部使用增量插槽(`shell.overlay`、
   `conversation.session.header.actions`、`conversation.input.dock`、
   `sidebar.footer.action`), 不替换任何内置 UI; 纯 JS + `React.createElement`,
@@ -108,6 +123,7 @@ DSH 动态 Cordis 插件:在左侧工作区浏览目录与文件。双入口(侧
 
 | 版本 | 说明 |
 | --- | --- |
+| v1.5.0 | 静态 bundle 化: `package.json`(dsh.bundle.patch + dsh.client.platform)+ `cordis.patch.yml` + `lib/index.js`(webServer 挂三个 JSON 路由)+ `client/client.js`(__ModuleLoader__ 注册, host.call→fetch, styles→自建标签); 随 profile 层栈自动加载, 无需重启后手动 define/run; 动态形态源码保留为回退; 安全审查持平 WARN(33/300) |
 | v1.4.0 | 图标整体改用 Google Material Icons 官方库(Apache 2.0): 实心填充风格小尺寸下清晰, 符合 Chrome/Android 大厂标准; 关闭面板=keyboard_double_arrow_left(« 与 VS Code 一致)、工作区=workspaces、根目录=home、上一级=arrow_upward、刷新=refresh、资源管理器=folder_open、关闭预览=close; svgIcon 改 fill=currentColor, 默认尺寸 14→16px; Host 无改动, 安全审查持平 WARN(33/300) |
 | v1.3.0 | 图标改用 Lucide 官方图标库(lucide.dev, ISC 许可): 关闭面板=panel-left-close、当前工作区=briefcase、根目录=house、上一级=folder-up、刷新=refresh-cw、资源管理器打开=folder-open、关闭预览=x, 语义更直观(已被 v1.4.0 的 Material Icons 取代); Host 无改动 |
 | v1.2.3 | 修复「文件浏览」「打开目录」按钮浅色主题下文字看不清: 入口按钮改为 CSS 类并全部使用主题 CSS 变量(`label-primary` 文字 / `bg-layer-1/2` 背景 / `brand-primary` 激活态), 深浅色及任意主题自动适配保证对比, 补充 hover 反馈; Host 无改动 |

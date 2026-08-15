@@ -1,7 +1,11 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.4.0 (DSH 动态 Cordis 插件)
+// 左侧文件浏览器 (fexp) — v1.5.0 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.host 参数原文(函数体)。
 // 用途: 在左侧工作区浏览目录与文件, 点击目录进入、点击文件预览内容。
+//
+// v1.5.0 起主形态为静态 bundle(lib/index.js + client/client.js, 随 profile
+// 自动加载); 本文件与 client-source.js 保留为动态插件回退形态(无 bundle
+// 能力的 profile 按 README 恢复流程加载)。
 //
 // Host 半区职责:
 //   - default-root: 返回当前工作区根目录(沙箱策略 workspaceRoot, 兜底 fs.resolve('.'))
