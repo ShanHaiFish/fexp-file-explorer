@@ -26,6 +26,12 @@ A dynamic Cordis plugin for DSH (DeepSeek Harness) that browses workspace direct
 - **Add to chat**: appends a file reference `[file name](absolute path)` to the chat input draft (without overwriting existing content); supports adding multiple files in a row
 - **Icons (v1.4.0)**: Google Material Icons official library (fonts.google.com/icons, Apache 2.0), solid fill style stays crisp at small sizes, consistent with Chrome/Android first-party visuals
 
+## Screenshots
+
+| | | |
+| --- | --- | --- |
+| ![fexp screenshot 1](assets/screenshot-1.png) | ![fexp screenshot 2](assets/screenshot-2.png) | ![fexp screenshot 3](assets/screenshot-3.png) |
+
 ## Quick Start
 
 ```sh
@@ -57,6 +63,7 @@ Restart `dsh web` and the plugin activates automatically: the "File Explorer" pi
 | `host-source.js` + `client-source.js` | Dynamic-plugin fallback form: for profiles without bundle support |
 | `manifest.json` | Plugin metadata + restore parameters (plugin/name/purpose/version) |
 | `LICENSE` | MIT License |
+| `assets/` | UI screenshots (screenshot-1~3.png) |
 | `AGENTS.md` | Agent collaboration conventions (rebuild flow / change workflow / coding conventions / versioning) |
 | `README.md` / `README.en.md` | 中文 / English docs |
 

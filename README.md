@@ -30,6 +30,12 @@ DSH(DeepSeek Harness)动态 Cordis 插件:在左侧工作区浏览目录与文�
 - **图标(v1.4.0)**: Google Material Icons 官方库(fonts.google.com/icons,
   Apache 2.0 许可), 实心填充风格小尺寸下依然清晰, 与 Chrome/Android 大厂视觉一致
 
+## 界面预览
+
+| | | |
+| --- | --- | --- |
+| ![fexp 界面截图 1](assets/screenshot-1.png) | ![fexp 界面截图 2](assets/screenshot-2.png) | ![fexp 界面截图 3](assets/screenshot-3.png) |
+
 ## 快速开始
 
 ```sh
@@ -61,6 +67,7 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 | `host-source.js` + `client-source.js` | 动态插件回退形态:无 bundle 能力的 profile 按下方流程加载 |
 | `manifest.json` | 插件元数据 + 恢复定义参数(plugin/name/purpose/version) |
 | `LICENSE` | MIT 许可证 |
+| `assets/` | 界面预览截图(screenshot-1~3.png) |
 | `AGENTS.md` | 代理协作约定(重建流程/修改工作流/编码约定/版本管理) |
 | `README.md` / `README.en.md` | 中文 / English 文档 |
 
