@@ -14,7 +14,8 @@ DSH(DeepSeek Harness)动态 Cordis 插件:在左侧工作区浏览目录与文�
 ## 功能特性
 
 - **双入口**(SVG 矢量图标, 颜色全部使用主题 CSS 变量, 深浅色及任意主题下文字与背景都保持对比):
-  - 侧栏顶部「工作区」标题行右侧的「文件浏览」胶囊按钮(宽栏时显示)
+  - 侧栏顶部「工作区」标题行右侧的「文件浏览」胶囊按钮(宽栏时显示;
+    工作区「搜索会话」搜索框展开时自动隐藏, 避免遮挡搜索框, v1.5.1)
   - 会话标题栏「打开目录」按钮
 - **浏览面板**(点击任意入口滑出, 320px, 覆盖左侧区域):
   - 自动定位到**当前工作区目录**(当前会话 cwd); 切换工作区后面板自动重新定位,
@@ -123,6 +124,12 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 - **图标库(v1.4.0)**: Google Material Icons 官方库 path, 实心填充渲染
   (`fill="currentColor"`, 无 stroke), 默认尺寸 16px; 前版(v1.3.0)的 Lucide
   线性图标已取代。
+- **搜索框避让(v1.5.1)**: 「文件浏览」入口按钮固定定位在「工作区」标题行,
+  工作区「搜索会话」搜索框展开时正好被按钮遮挡; `TopToggle` 用
+  `MutationObserver` 监听搜索按钮 `aria-expanded` 状态(展开时该按钮带
+  `aria-expanded="true"` 且下一个兄弟元素为 `input[type=text]`, 与同样带
+  `aria-expanded` 的会话行/分组折叠按钮可区分), 搜索框展开期间隐藏入口
+  按钮, 收起后自动恢复; Host 无改动。
 
 ## 安全与边界
 
@@ -139,6 +146,7 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 
 | 版本 | 说明 |
 | --- | --- |
+| v1.5.1 | 修复「文件浏览」按钮遮挡工作区「搜索会话」搜索框: 点击工作区顶部搜索图标展开搜索框时, 固定定位的入口按钮正好叠在搜索框上挡住输入; TopToggle 用 MutationObserver 监听搜索按钮 aria-expanded 状态(搜索按钮展开时带 aria-expanded="true" 且下一个兄弟元素为 input[type=text], 与会话行/分组折叠按钮可区分), 搜索框展开期间隐藏入口按钮、收起后自动恢复; Host 无改动, 纯 Client 能力, 安全审查持平 WARN(33/300) |
 | v1.5.0 | 静态 bundle 化: `package.json`(dsh.bundle.patch + dsh.client.platform)+ `cordis.patch.yml` + `lib/index.js`(webServer 挂三个 JSON 路由)+ `client/client.js`(__ModuleLoader__ 注册, host.call→fetch, styles→自建标签); 随 profile 层栈自动加载, 无需重启后手动 define/run; 动态形态源码保留为回退; 安全审查持平 WARN(33/300) |
 | v1.4.0 | 图标整体改用 Google Material Icons 官方库(Apache 2.0): 实心填充风格小尺寸下清晰, 符合 Chrome/Android 大厂标准; 关闭面板=keyboard_double_arrow_left(« 与 VS Code 一致)、工作区=workspaces、根目录=home、上一级=arrow_upward、刷新=refresh、资源管理器=folder_open、关闭预览=close; svgIcon 改 fill=currentColor, 默认尺寸 14→16px; Host 无改动, 安全审查持平 WARN(33/300) |
 | v1.3.0 | 图标改用 Lucide 官方图标库(lucide.dev, ISC 许可): 关闭面板=panel-left-close、当前工作区=briefcase、根目录=house、上一级=folder-up、刷新=refresh-cw、资源管理器打开=folder-open、关闭预览=x, 语义更直观(已被 v1.4.0 的 Material Icons 取代); Host 无改动 |

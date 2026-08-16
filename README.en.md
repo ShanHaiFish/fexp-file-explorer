@@ -14,7 +14,7 @@ A dynamic Cordis plugin for DSH (DeepSeek Harness) that browses workspace direct
 ## Features
 
 - **Dual entry points** (SVG vector icons; colors use theme CSS variables, so text stays readable on light, dark, and any custom theme):
-  - "File Explorer" pill button at the top of the sidebar, right of the "Workspaces" title (shown when the sidebar is wide)
+  - "File Explorer" pill button at the top of the sidebar, right of the "Workspaces" title (shown when the sidebar is wide; auto-hidden while the "Search sessions" box is expanded so it never covers the search input, v1.5.1)
   - "Open Directory" button in the session header bar
 - **Browse panel** (slides out from either entry, 320px, overlays the left area):
   - Automatically locates the **current workspace directory** (current session `cwd`); re-locates automatically when you switch workspaces, while re-opening in the same workspace keeps your last position
@@ -93,6 +93,7 @@ Dynamic fallback steps:
 - **Workspace binding (v1.2.2)**: the panel-loading effect was guarded by `path === null`, so after browsing once (or entering a subdirectory), closing and reopening — or switching workspaces — never reloaded, leaving the previous workspace's directory on screen. A `boundWs` binding state now re-binds and reloads the current workspace directory whenever `boundWs !== current wsPath` on open or workspace switch; re-opening in the same workspace keeps the last position. Both entries go through `openPanelFor`; the toolbar "current workspace" goes through `bindWorkspace`.
 - **Theme contrast (v1.2.3)**: entry buttons used hard-coded inline colors (near-white `#e8edf3` text) that vanished on light themes; they now use CSS classes `.fexp-entry-btn` / `.fexp-entry-btn-active` with theme CSS variables (`label-primary` text, `bg-layer-1/2` background, `border-l2` border, `brand-primary` active state), adapting automatically to any theme with hover feedback.
 - **Icon library (v1.4.0)**: Google Material Icons official paths, solid fill rendering (`fill="currentColor"`, no stroke), default size 16px; the Lucide line icons from v1.3.0 are superseded.
+- **Search-box avoidance (v1.5.1)**: the "File Explorer" pill is fixed-positioned on the "Workspaces" title row, so it landed exactly on top of the expanded "Search sessions" box. `TopToggle` now watches the search button's `aria-expanded` attribute with a `MutationObserver` (the expanded search button carries `aria-expanded="true"` and its next sibling is an `input[type=text]`, which distinguishes it from the session rows / group-collapse buttons that also use `aria-expanded`); the entry button hides while the search box is expanded and reappears when it collapses. Host unchanged.
 
 ## Security & Boundaries
 
@@ -104,6 +105,7 @@ Dynamic fallback steps:
 
 | Version | Notes |
 | --- | --- |
+| v1.5.1 | Fixed the "File Explorer" button covering the "Search sessions" box: expanding the search box from the workspace title row placed the fixed-positioned entry button right on top of the input. `TopToggle` now uses a `MutationObserver` on the search button's `aria-expanded` state (expanded search button = `aria-expanded="true"` + next sibling `input[type=text]`, distinguishable from session-row/group-collapse buttons), hiding the entry button while the search box is expanded and restoring it on collapse; Host unchanged, pure client capability, security review stays WARN (33/300) |
 | v1.5.0 | Static-bundled: `package.json` (`dsh.bundle.patch` + `dsh.client.platform`) + `cordis.patch.yml` + `lib/index.js` (three JSON routes on webServer) + `client/client.js` (`__ModuleLoader__` registration, host.call→fetch, styles→self-managed tags); auto-loads from the profile layer stack, no manual define/run after restarts; dynamic sources kept as fallback; security review stays WARN (33/300) |
 | v1.4.0 | Icons switched to Google Material Icons (Apache 2.0): solid fill stays crisp at small sizes, Chrome/Android-grade; close panel=keyboard_double_arrow_left («, like VS Code), workspace=workspaces, root=home, up=arrow_upward, refresh=refresh, open-in-explorer=folder_open, close preview=close; svgIcon uses fill=currentColor, default size 14→16px; Host unchanged |
 | v1.3.0 | Icons switched to Lucide (ISC): panel-left-close, briefcase, house, folder-up, refresh-cw, folder-open, x (superseded by Material Icons in v1.4.0); Host unchanged |

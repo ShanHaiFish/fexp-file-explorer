@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.5.0 (DSH 动态 Cordis 插件 · 回退形态)
+// 左侧文件浏览器 (fexp) — v1.5.1 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // v1.5.0 起主形态为静态 bundle(lib/index.js + client/client.js, 随 profile
@@ -13,6 +13,14 @@
 //   - 左侧 320px 浏览面板 (shell.overlay): 面包屑导航、目录列表、文件预览
 //   - 主题适配: 面板与按钮颜色全部使用主题 CSS 变量, 深浅色及任意主题
 //     下文字与背景都保持对比; SVG 矢量图标
+//
+// v1.5.1 修复:
+//   - 「文件浏览」按钮遮挡工作区「搜索会话」搜索框: 点击工作区顶部搜索图标
+//     展开搜索框时, 固定定位的「文件浏览」入口按钮(top:126px/left:70px)
+//     正好叠在搜索框上, 挡住输入。修复: TopToggle 用 MutationObserver 监听
+//     搜索按钮的 aria-expanded 状态(搜索按钮展开时 aria-expanded="true" 且
+//     其下一个兄弟元素就是 input[type=text], 与同样带 aria-expanded 的
+//     会话行/分组折叠按钮可区分), 搜索框展开期间隐藏入口按钮, 收起后恢复。
 //
 // v1.4.0 更新:
 //   - 图标整体改用 Google Material Icons 官方图标库
@@ -210,6 +218,7 @@ return {
     let state = {
       open: false,
       sidebarWide: true,
+      searchOpen: false,
       root: null,
       boundWs: null,
       path: null,
@@ -472,10 +481,46 @@ return {
     function TopToggle(props) {
       const open = useStore((s) => s.open)
       const wide = useStore((s) => s.sidebarWide)
+      const searchOpen = useStore((s) => s.searchOpen)
       const wsPath = props.useSessions
         ? props.useSessions((s) => (s.byId[s.current] ? s.byId[s.current].cwd : undefined))
         : undefined
+
+      // 工作区「搜索会话」搜索框展开检测: 搜索按钮展开时带
+      // aria-expanded="true", 且它的下一个兄弟元素就是搜索输入框
+      // (input[type=text])。会话行/分组折叠按钮也带 aria-expanded,
+      // 但后面没有文本输入框, 不会误判; 无 DOM 环境(如受限 runner)
+      // 时按未展开处理。
+      React.useEffect(() => {
+        if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return
+        const sync = () => {
+          let value = false
+          try {
+            const buttons = document.querySelectorAll('button[aria-expanded="true"]')
+            for (const btn of buttons) {
+              const input = btn.nextElementSibling
+              if (input && input.tagName === 'INPUT' && input.getAttribute('type') === 'text') {
+                value = true
+                break
+              }
+            }
+          } catch (e) { /* ignore */ }
+          if (state.searchOpen !== value) setState({ searchOpen: value })
+        }
+        sync()
+        const observer = new MutationObserver(sync)
+        observer.observe(document.documentElement, {
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['aria-expanded'],
+          childList: true,
+        })
+        return () => observer.disconnect()
+      }, [])
+
       if (!wide) return null
+      // 搜索框展开时隐藏入口按钮, 避免遮挡搜索框; 收起后自动恢复。
+      if (searchOpen) return null
       const style = {
         position: 'fixed',
         top: '126px',

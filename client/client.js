@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.5.0 (DSH 静态 bundle 插件 · Client 半区)
+// 左侧文件浏览器 (fexp) — v1.5.1 (DSH 静态 bundle 插件 · Client 半区)
 // 静态形态: 经 window.__ModuleLoader__ 注册, 随 profile 层栈自动加载,
 // 无需每次重启 DSH 后重新 cordis_define/run。
 //
@@ -10,6 +10,14 @@
 //   - styles.insert(css) → insertCss(css): 自建 <style> 标签并打上
 //     data-plugin 书签(web 端模块系统负责清理)
 // 其余逻辑(插槽注册/useStore/工作区绑定/图标等)与动态形态完全一致。
+//
+// v1.5.1 修复:
+//   - 「文件浏览」按钮遮挡工作区「搜索会话」搜索框: 点击工作区顶部搜索图标
+//     展开搜索框时, 固定定位的「文件浏览」入口按钮(top:126px/left:70px)
+//     正好叠在搜索框上, 挡住输入。修复: TopToggle 用 MutationObserver 监听
+//     搜索按钮的 aria-expanded 状态(搜索按钮展开时 aria-expanded="true" 且
+//     其下一个兄弟元素就是 input[type=text], 与同样带 aria-expanded 的
+//     会话行/分组折叠按钮可区分), 搜索框展开期间隐藏入口按钮, 收起后恢复。
 // ============================================================
 window.__ModuleLoader__.load({
   id: 'fexp-file-explorer',
@@ -187,6 +195,7 @@ window.__ModuleLoader__.load({
       let state = {
         open: false,
         sidebarWide: true,
+        searchOpen: false,
         root: null,
         boundWs: null,
         path: null,
@@ -449,10 +458,46 @@ window.__ModuleLoader__.load({
       function TopToggle(props) {
         const open = useStore((s) => s.open)
         const wide = useStore((s) => s.sidebarWide)
+        const searchOpen = useStore((s) => s.searchOpen)
         const wsPath = props.useSessions
           ? props.useSessions((s) => (s.byId[s.current] ? s.byId[s.current].cwd : undefined))
           : undefined
+
+        // 工作区「搜索会话」搜索框展开检测: 搜索按钮展开时带
+        // aria-expanded="true", 且它的下一个兄弟元素就是搜索输入框
+        // (input[type=text])。会话行/分组折叠按钮也带 aria-expanded,
+        // 但后面没有文本输入框, 不会误判; 无 DOM 环境(如受限 runner)
+        // 时按未展开处理。
+        React.useEffect(() => {
+          if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return
+          const sync = () => {
+            let value = false
+            try {
+              const buttons = document.querySelectorAll('button[aria-expanded="true"]')
+              for (const btn of buttons) {
+                const input = btn.nextElementSibling
+                if (input && input.tagName === 'INPUT' && input.getAttribute('type') === 'text') {
+                  value = true
+                  break
+                }
+              }
+            } catch (e) { /* ignore */ }
+            if (state.searchOpen !== value) setState({ searchOpen: value })
+          }
+          sync()
+          const observer = new MutationObserver(sync)
+          observer.observe(document.documentElement, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['aria-expanded'],
+            childList: true,
+          })
+          return () => observer.disconnect()
+        }, [])
+
         if (!wide) return null
+        // 搜索框展开时隐藏入口按钮, 避免遮挡搜索框; 收起后自动恢复。
+        if (searchOpen) return null
         const style = {
           position: 'fixed',
           top: '126px',
