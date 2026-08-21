@@ -11,6 +11,15 @@ A dynamic Cordis plugin for DSH (DeepSeek Harness) that browses workspace direct
 
 **Since v1.5.0 this is a static bundle plugin loaded automatically from the profile layer stack** — install once, and it activates on every DSH startup with no manual `define`/`run` needed.
 
+> **⚠️ This repository has moved and is archived**: further development of fexp-file-explorer now happens in the
+> **[ShanHaiFish/dsh-plugins](https://github.com/ShanHaiFish/dsh-plugins)** collection repo (source at
+> [`plugins/fexp-file-explorer/`](https://github.com/ShanHaiFish/dsh-plugins/tree/main/plugins/fexp-file-explorer)).
+> The v1.5.1 Release, full history, and the GitHub Pages docs remain here. New install command:
+>
+> ```sh
+> dsh plugin --profile web add "github:ShanHaiFish/dsh-plugins#path:plugins/fexp-file-explorer"
+> ```
+
 ## Features
 
 - **Dual entry points** (SVG vector icons; colors use theme CSS variables, so text stays readable on light, dark, and any custom theme):
@@ -35,11 +44,11 @@ A dynamic Cordis plugin for DSH (DeepSeek Harness) that browses workspace direct
 ## Quick Start
 
 ```sh
-# Install (static bundle, recommended)
-dsh plugin --profile web add fexp-file-explorer
+# Install (static bundle, recommended; moved into the dsh-plugins monorepo)
+dsh plugin --profile web add "github:ShanHaiFish/dsh-plugins#path:plugins/fexp-file-explorer"
 ```
 
-For a local, unpublished copy use `file:` pointing at this repository (the path must NOT contain spaces):
+For local development use `file:` pointing at this repository (the path must NOT contain spaces):
 
 ```sh
 dsh plugin --profile web add file:/path/to/fexp-file-explorer
