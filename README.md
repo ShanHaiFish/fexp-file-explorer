@@ -11,15 +11,6 @@ DSH(DeepSeek Harness)动态 Cordis 插件:在左侧工作区浏览目录与文�
 
 **v1.5.0 起为静态 bundle 插件,随 profile 层栈自动加载**——安装一次,每次启动 DSH 即自动生效,不再需要手动 define/run。
 
-> **⚠️ 本仓库已迁移归档**: fexp-file-explorer 的后续开发与发布已并入插件组仓库
-> **[ShanHaiFish/dsh-plugins](https://github.com/ShanHaiFish/dsh-plugins)**(源码位于
-> [`plugins/fexp-file-explorer/`](https://github.com/ShanHaiFish/dsh-plugins/tree/main/plugins/fexp-file-explorer))。
-> v1.5.1 Release、历史提交与 GitHub Pages 文档站保留在本仓库。新安装命令:
->
-> ```sh
-> dsh plugin --profile web add "github:ShanHaiFish/dsh-plugins#path:plugins/fexp-file-explorer"
-> ```
-
 ## 功能特性
 
 - **双入口**(SVG 矢量图标, 颜色全部使用主题 CSS 变量, 深浅色及任意主题下文字与背景都保持对比):
@@ -49,8 +40,8 @@ DSH(DeepSeek Harness)动态 Cordis 插件:在左侧工作区浏览目录与文�
 ## 快速开始
 
 ```sh
-# 安装(静态 bundle, 推荐; 已迁移至 dsh-plugins monorepo)
-dsh plugin --profile web add "github:ShanHaiFish/dsh-plugins#path:plugins/fexp-file-explorer"
+# 安装(静态 bundle, 推荐)
+dsh plugin --profile web add github:ShanHaiFish/fexp-file-explorer
 ```
 
 本地开发用 `file:` 指向本仓库(注意路径不能含空格):
