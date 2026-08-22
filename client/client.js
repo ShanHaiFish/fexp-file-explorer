@@ -717,7 +717,7 @@ window.__ModuleLoader__.load({
             }, React.createElement(IconRefresh, null)),
             React.createElement('button', {
               type: 'button', className: 'fexp-tbtn',
-              title: '在系统资源管理器中打开当前目录',
+              title: '打开资源管理器',
               disabled: !path || opening,
               onClick: () => openInExplorer(path),
             }, React.createElement(IconFolderOpen, null))),

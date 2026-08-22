@@ -152,6 +152,7 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 
 | 版本 | 说明 |
 | --- | --- |
+| v1.5.3 | 精简「打开资源管理器」按钮 hover 文字: 「在系统资源管理器中打开当前目录」(14 字) → 「打开资源管理器」(6 字), 与工具栏其他按钮 4~6 字风格一致; 纯文字改动无逻辑变化; 安全审查持平 WARN(38/300) |
 | v1.5.2 | 修复「在系统资源管理器中打开」被拦截型插件干扰: 装有 `dsh-better-sidebar`(默认拦截 `workspaces.openPath`)时, 该插件把调用改道为「在侧边栏编辑器打开文件」, 对目录报 `"<path>" is a directory`; `openInExplorer` 改为优先直连 DSH 原生 `host.openPath`(官方信封协议, `POST /api/host.openPath`, 同源, 无新增 Host RPC/外部网络), 绕过被 patch 的通道; 无 fetch 环境或网络层失败时回退原通道, 信封内业务错误如实报告; 工具栏按钮不再依赖 `workspaces` 存在; 安全审查 WARN(38/300) |
 | v1.5.1 | 修复「文件浏览」按钮遮挡工作区「搜索会话」搜索框: 点击工作区顶部搜索图标展开搜索框时, 固定定位的入口按钮正好叠在搜索框上挡住输入; TopToggle 用 MutationObserver 监听搜索按钮 aria-expanded 状态(搜索按钮展开时带 aria-expanded="true" 且下一个兄弟元素为 input[type=text], 与会话行/分组折叠按钮可区分), 搜索框展开期间隐藏入口按钮、收起后自动恢复; Host 无改动, 纯 Client 能力, 安全审查持平 WARN(33/300) |
 | v1.5.0 | 静态 bundle 化: `package.json`(dsh.bundle.patch + dsh.client.platform)+ `cordis.patch.yml` + `lib/index.js`(webServer 挂三个 JSON 路由)+ `client/client.js`(__ModuleLoader__ 注册, host.call→fetch, styles→自建标签); 随 profile 层栈自动加载, 无需重启后手动 define/run; 动态形态源码保留为回退; 安全审查持平 WARN(33/300) |
