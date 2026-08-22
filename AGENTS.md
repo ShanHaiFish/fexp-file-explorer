@@ -8,9 +8,9 @@
 双入口(侧栏顶部「文件浏览」胶囊 + 会话标题栏「打开目录」按钮)→ 320px 滑出面板,
 定位当前工作区目录,目录在前、文件在后,点击目录进入、点击文件预览文本内容。
 
-当前版本:`v1.5.2`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
-v1.1.0 起工具栏可一键在系统资源管理器中打开当前目录;v1.2.0 起预览文件时
-「添加到聊天」把文件引用 `[文件名](绝对路径)` 追加到聊天输入框草稿。
+当前版本:`v1.6.0`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
+v1.1.0 起工具栏可一键在系统资源管理器中打开当前目录;v1.6.0 起预览文件时
+「添加到聊天」把 DSH @ 文件命令引用(短引用)追加到聊天输入框草稿。
 
 ## 文件结构与职责
 
@@ -64,7 +64,7 @@ v1.1.0 起工具栏可一键在系统资源管理器中打开当前目录;v1.2.0
 - **安全红线**:只声明 `CAPABILITIES: fs, rpc`;不引入外部网络请求、不 spawn 进程;
   新增 RPC 前先过 `plugin_security_review`,保持 WARN 级(≈33/300, v1.5.2 起 38/300);
   优先复用 DSH 原生能力(如 `host.openPath`)而非新增 Host RPC。
-- **行为细节**(v1.0.0~v1.5.2 已验证,改动需回归):
+- **行为细节**(v1.0.0~v1.6.0 已验证,改动需回归):
   - 文件预览文本默认上限 256KB,最大 1MB,超限返回 `FS_TOO_LARGE` 明确提示;
   - 启动时序竞态防护:`useStore` 订阅后立即自愈同步当前状态;`sidebarWide` 默认 `true`;
   - 侧栏底部隐藏探针仅报告宽窄状态(渲染 null),不要让它产生可见 UI;
@@ -74,9 +74,12 @@ v1.1.0 起工具栏可一键在系统资源管理器中打开当前目录;v1.2.0
     `"…" is a directory`;应直连 DSH 原生 `host.openPath`(`POST /api/host.openPath`,
     官方 client-request 信封协议, 同源),`typeof fetch === 'function'` 时优先走原生
     API、网络层失败或无 fetch 环境回退 `workspaces.openPath`;
-  - 添加到聊天(v1.2.0/1.2.1):`conversation.input.dock` 插槽内的隐藏桥捕获标准包
-    `inputActions`(setDraft)与 `useInput`(草稿订阅),把 `[文件名](绝对路径)` 追加到
-    现有草稿、不覆盖;v1.2.1 起按钮保持常显、无「已添加」状态,支持连续多次添加。
+  - 添加到聊天(v1.2.0/1.2.1, v1.6.0 改 @ 引用):`conversation.input.dock` 插槽内的隐藏桥捕获标准包
+    `inputActions`(setDraft)与 `useInput`(草稿订阅),v1.6.0 起把 DSH **@ 文件命令引用**
+    (官方 `formatFileMention` 语法:cwd 内相对路径、cwd 外绝对路径、含空格加 `@"…"` 引号,
+    连续添加以空格分隔)追加到现有草稿、不覆盖,输入框只显示短引用;DSH 系统提示
+    `FILE_REFERENCE_PROMPT` 让模型按 @ 前缀理解并 read 读取引用文件,不要再拼
+    `[文件名](绝对路径)` 长文本。
 
 ## 版本管理约定
 

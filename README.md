@@ -27,8 +27,11 @@ DSH(DeepSeek Harness)动态 Cordis 插件:在左侧工作区浏览目录与文�
 - **在系统资源管理器中打开**: 一键用系统资源管理器打开当前浏览的目录
   (DSH 原生 `host.openPath`, Windows 走 `Invoke-Item`; 直连原生 API
   `POST /api/host.openPath`, 避免被拦截型第三方插件把调用改道到文件编辑器)
-- **添加到聊天**: 预览文件时把文件引用 `[文件名](绝对路径)` 追加到聊天输入框草稿
-  (不覆盖已有内容), 可连续添加多个文件, 方便告诉 AI 具体文件信息
+- **添加到聊天(v1.6.0)**: 预览文件时把 DSH **@ 文件命令引用**追加到聊天输入框草稿
+  (不覆盖已有内容), 可连续添加多个文件(空格分隔): 工作区 cwd 内的文件用
+  相对路径(`@client/client.js` 形式), 工作区外保留绝对路径, 含空格路径按官方
+  语法加引号(`@"path with spaces"`); 输入框只显示短引用, DSH 原生 @ 语义
+  让模型明白这是你显式引用的文件, 需要内容时它会用 read 工具读取
 - **图标(v1.4.0)**: Google Material Icons 官方库(fonts.google.com/icons,
   Apache 2.0 许可), 实心填充风格小尺寸下依然清晰, 与 Chrome/Android 大厂视觉一致
 
@@ -58,7 +61,7 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 1. **打开面板**: 点击侧栏「文件浏览」或会话标题栏「打开目录」, 320px 面板从左侧滑出, 自动定位到当前工作区目录;
 2. **浏览**: 点击目录进入下一级, 用工具栏「上一级 / 回到根目录 / 刷新」导航, 或点面包屑任意层级跳转;
 3. **预览文件**: 点击文件在面板底部预览文本内容(默认 256KB 上限);
-4. **添加到聊天**: 预览时点击「添加到聊天」, 文件引用 `[文件名](绝对路径)` 追加到输入框草稿, 编辑后发送;
+4. **添加到聊天**: 预览时点击「添加到聊天」, DSH @ 文件引用(`@相对路径` / `@"带空格路径"`)追加到输入框草稿, 编辑后发送;
 5. **在系统资源管理器中打开**: 工具栏最右侧按钮, 一键打开当前浏览的目录(Windows 走 `Invoke-Item`)。
 
 ## 仓库内容
@@ -113,10 +116,15 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
   对目录报 `"…" is a directory`; 直连原生 API 绕过被 patch 的通道,
   无 fetch 环境/网络层失败时回退 `workspaces.openPath`; 不新增 Host RPC,
   无 spawn/外部网络能力。
-- **添加到聊天(v1.2.0)**: 会话作用域插槽 `conversation.input.dock` 内的隐藏桥
+- **添加到聊天(v1.2.0~v1.6.0)**: 会话作用域插槽 `conversation.input.dock` 内的隐藏桥
   组件捕获标准包 `inputActions`(setDraft) 与 `useInput`(草稿订阅), 面板
-  「添加到聊天」调用 `setDraft(现有草稿 + 文件引用)`; 这是内置 UI 写输入框的
-  同一官方通道, 纯 Client 能力, 无新 Host RPC。
+  「添加到聊天」调用 `setDraft(现有草稿 + 引用)`; 这是内置 UI 写输入框的
+  同一官方通道, 纯 Client 能力, 无新 Host RPC。v1.6.0 起插入的引用改为 DSH
+  @ 文件命令语法(与官方 file-reference 的 `formatFileMention` 一致):
+  工作区内相对路径、工作区外绝对路径、含空格加 `@"…"` 引号; DSH 系统提示的
+  `FILE_REFERENCE_PROMPT`(Paths prefixed with @ are files explicitly referenced
+  by the user; use the read tool when contents are needed) 让模型按 @ 前缀
+  理解并读取引用文件, 不再需要拼长 Markdown 链接。
 - **工作区绑定(v1.2.2)**: 面板加载 effect 原以 `path === null` 为守卫, 之前浏览过
   后关闭再打开(或切换工作区)不会重新加载, 导致「文件浏览」展示上一个工作区的
   旧目录; 新增 `boundWs` 绑定状态, 打开面板/工作区切换时若 `boundWs !== 当前
@@ -152,6 +160,7 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 
 | 版本 | 说明 |
 | --- | --- |
+| v1.6.0 | 「添加到聊天」改插 DSH @ 文件命令引用: 不再拼 `[文件名](绝对路径)` 长文本, 改为插入官方语法 `@相对路径`(工作区内)/`@绝对路径`(工作区外)/`@"带空格路径"`(含空格时); DSH 原生 FILE_REFERENCE_PROMPT 让模型按 @ 前缀理解并 read 读取; 连续添加多个以空格分隔; 输入框只显示短引用; 纯 Client 能力, 安全审查持平 WARN(38/300) |
 | v1.5.3 | 精简「打开资源管理器」按钮 hover 文字: 「在系统资源管理器中打开当前目录」(14 字) → 「打开资源管理器」(6 字), 与工具栏其他按钮 4~6 字风格一致; 纯文字改动无逻辑变化; 安全审查持平 WARN(38/300) |
 | v1.5.2 | 修复「在系统资源管理器中打开」被拦截型插件干扰: 装有 `dsh-better-sidebar`(默认拦截 `workspaces.openPath`)时, 该插件把调用改道为「在侧边栏编辑器打开文件」, 对目录报 `"<path>" is a directory`; `openInExplorer` 改为优先直连 DSH 原生 `host.openPath`(官方信封协议, `POST /api/host.openPath`, 同源, 无新增 Host RPC/外部网络), 绕过被 patch 的通道; 无 fetch 环境或网络层失败时回退原通道, 信封内业务错误如实报告; 工具栏按钮不再依赖 `workspaces` 存在; 安全审查 WARN(38/300) |
 | v1.5.1 | 修复「文件浏览」按钮遮挡工作区「搜索会话」搜索框: 点击工作区顶部搜索图标展开搜索框时, 固定定位的入口按钮正好叠在搜索框上挡住输入; TopToggle 用 MutationObserver 监听搜索按钮 aria-expanded 状态(搜索按钮展开时带 aria-expanded="true" 且下一个兄弟元素为 input[type=text], 与会话行/分组折叠按钮可区分), 搜索框展开期间隐藏入口按钮、收起后自动恢复; Host 无改动, 纯 Client 能力, 安全审查持平 WARN(33/300) |

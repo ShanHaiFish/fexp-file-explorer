@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.5.2 (DSH 动态 Cordis 插件 · 回退形态)
+// 左侧文件浏览器 (fexp) — v1.6.0 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // v1.5.0 起主形态为静态 bundle(lib/index.js + client/client.js, 随 profile
@@ -13,6 +13,13 @@
 //   - 左侧 320px 浏览面板 (shell.overlay): 面包屑导航、目录列表、文件预览
 //   - 主题适配: 面板与按钮颜色全部使用主题 CSS 变量, 深浅色及任意主题
 //     下文字与背景都保持对比; SVG 矢量图标
+//
+// v1.6.0 功能:
+//   - 「添加到聊天」改插 DSH @ 文件命令引用(官方 file-reference 的
+//     formatFileMention 语法): 工作区 cwd 内相对路径(@client/client.js)、
+//     工作区外绝对路径、含空格路径加引号(@"path with spaces")。DSH 系统
+//     提示 FILE_REFERENCE_PROMPT 让模型按 @ 前缀理解并 read 读取引用文件,
+//     输入框只显示短引用, 不再拼接 [文件名](绝对路径) 长文本。
 //
 // v1.5.2 修复:
 //   - 「在系统资源管理器中打开」被拦截型插件(如 dsh-better-sidebar)
@@ -328,12 +335,49 @@ return {
       return String(dir).replace(/[\\/]+$/, '') + '/' + name
     }
 
-    function addToChat(fileInfo) {
+    // 工作区 cwd 内的绝对路径转为相对形式(斜杠分隔, 与官方 file-reference
+    // 候选一致), 工作区外保留绝对路径 —— 输入框内显示更短的引用。
+    function relToWs(wsPath, abs) {
+      const base = String(wsPath || '').replace(/[\\/]+$/, '')
+      const p = String(abs || '')
+      if (!base || !p) return p
+      const lb = base.toLowerCase()
+      const lp = p.toLowerCase()
+      if (lp === lb) return '.'
+      if (lp.indexOf(lb + '/') === 0 || lp.indexOf(lb + '\\') === 0) {
+        return p.slice(base.length).replace(/^[\\/]+/, '').replace(/\\/g, '/')
+      }
+      return p
+    }
+
+    // 排除无法安全表示的字符(与官方 formatFileMention 一致):
+    // 控制字符与双引号, 逐字符检查避免正则转义字面量。
+    function mentionHasUnsafeChars(path) {
+      for (let i = 0; i < path.length; i++) {
+        const c = path.charCodeAt(i)
+        if (c < 32 || (c >= 127 && c <= 159) || c === 34) return true
+      }
+      return false
+    }
+
+    // 把文件引用格式化为 DSH 的 @ 文件命令语法(与官方 file-reference 的
+    // formatFileMention 一致): 无空格 @路径, 含空格 @"路径"。模型收到
+    // @ 前缀即知是用户显式引用的文件, 需要内容时用 read 工具读取;
+    // 输入框只显示短引用, 不再拼接 [文件名](绝对路径) 长文本。
+    function mentionFor(fileInfo, wsPath) {
+      const path = relToWs(wsPath, fileInfo && fileInfo.path)
+      if (!path || mentionHasUnsafeChars(path)) return null
+      if (/\s/u.test(path)) return '@"' + path + '"'
+      return '@' + path
+    }
+
+    function addToChat(fileInfo, wsPath) {
       const actions = state.inputActions
       if (!actions || !fileInfo || !fileInfo.path) return
-      const ref = '[' + fileInfo.name + '](' + fileInfo.path + ')'
+      const ref = mentionFor(fileInfo, wsPath)
+      if (!ref) return
       const base = (state.chatDraft || '').trim()
-      const next = base ? base + '\n' + ref : ref
+      const next = base ? base + ' ' + ref : ref
       actions.setDraft(next)
     }
 
@@ -699,9 +743,9 @@ return {
             React.createElement('span', { className: 'fexp-preview-size' }, fmtSize(preview.bytes)),
             React.createElement('button', {
               type: 'button', className: 'fexp-chat-btn',
-              title: inputActions ? '将文件信息添加到聊天输入框' : '当前没有可用的会话输入框',
+              title: inputActions ? '以 @ 文件引用添加到聊天输入框' : '当前没有可用的会话输入框',
               disabled: !inputActions,
-              onClick: () => addToChat(preview),
+              onClick: () => addToChat(preview, wsPath),
             }, React.createElement(IconChat, { size: 13 }),
               React.createElement('span', null, '添加到聊天')),
             React.createElement('button', {
