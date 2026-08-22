@@ -25,7 +25,8 @@ DSH(DeepSeek Harness)动态 Cordis 插件:在左侧工作区浏览目录与文�
   - 文件预览: 文本内容(默认 256KB 上限, 最大 1MB), 二进制/超限有明确提示
   - 预览头部: 文件名 / 大小 / **[添加到聊天]** / 关闭预览
 - **在系统资源管理器中打开**: 一键用系统资源管理器打开当前浏览的目录
-  (DSH 原生 `host.openPath`, Windows 走 `Invoke-Item`)
+  (DSH 原生 `host.openPath`, Windows 走 `Invoke-Item`; 直连原生 API
+  `POST /api/host.openPath`, 避免被拦截型第三方插件把调用改道到文件编辑器)
 - **添加到聊天**: 预览文件时把文件引用 `[文件名](绝对路径)` 追加到聊天输入框草稿
   (不覆盖已有内容), 可连续添加多个文件, 方便告诉 AI 具体文件信息
 - **图标(v1.4.0)**: Google Material Icons 官方库(fonts.google.com/icons,
@@ -104,9 +105,14 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 - **竞态修复(v1.0.0)**: `useStore` 订阅后立即自愈同步当前状态, 避免"探针写入
   早于订阅导致更新丢失"的启动时序竞态; `sidebarWide` 默认 `true`, 探针异常时
   顶部按钮仍可见。
-- **打开资源管理器(v1.1.0)**: Client 直接调用 `ctx.get('workspaces').openPath(path)`
-  (即 DSH 原生 `host.openPath`, Windows 走 `Invoke-Item`); 不新增 Host RPC,
-  无 spawn/网络能力。
+- **打开资源管理器(v1.1.0/1.5.2)**: 路径直接交 DSH 原生 `host.openPath`
+  (Windows 走 `Invoke-Item`)。v1.5.2 起改为直连原生 API
+  (`POST /api/host.openPath`, 官方 client-request 信封协议, 同源)——
+  安装了 `dsh-better-sidebar` 等拦截型插件时会 monkey-patch
+  `workspaces.openPath`, 把「打开目录」改道成「在侧边栏编辑器打开文件」,
+  对目录报 `"…" is a directory`; 直连原生 API 绕过被 patch 的通道,
+  无 fetch 环境/网络层失败时回退 `workspaces.openPath`; 不新增 Host RPC,
+  无 spawn/外部网络能力。
 - **添加到聊天(v1.2.0)**: 会话作用域插槽 `conversation.input.dock` 内的隐藏桥
   组件捕获标准包 `inputActions`(setDraft) 与 `useInput`(草稿订阅), 面板
   「添加到聊天」调用 `setDraft(现有草稿 + 文件引用)`; 这是内置 UI 写输入框的
@@ -135,7 +141,7 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 
 - **能力声明**: `CAPABILITIES: fs, rpc`——仅文件系统访问(host 的 `fs` 服务)
   与常规 RPC; 无网络请求、无 spawn/进程、无凭据访问。
-- **安全审查**: WARN 级(33/300), 自 v1.0.0 起历版本持平; 审查引擎为
+- **安全审查**: WARN 级(v1.5.2 起 38/300, 此前历版本持平 33/300); 审查引擎为
   `plugin_security_review` / `plugin_security_audit`(见
   [dsh-plugin-security-review](https://github.com/ShanHaiFish/dsh-plugin-security-review))。
 - **已知限制**: 文件预览默认 256KB 上限(最大 1MB), 超限明确报错 `FS_TOO_LARGE`,
@@ -146,6 +152,7 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 
 | 版本 | 说明 |
 | --- | --- |
+| v1.5.2 | 修复「在系统资源管理器中打开」被拦截型插件干扰: 装有 `dsh-better-sidebar`(默认拦截 `workspaces.openPath`)时, 该插件把调用改道为「在侧边栏编辑器打开文件」, 对目录报 `"<path>" is a directory`; `openInExplorer` 改为优先直连 DSH 原生 `host.openPath`(官方信封协议, `POST /api/host.openPath`, 同源, 无新增 Host RPC/外部网络), 绕过被 patch 的通道; 无 fetch 环境或网络层失败时回退原通道, 信封内业务错误如实报告; 工具栏按钮不再依赖 `workspaces` 存在; 安全审查 WARN(38/300) |
 | v1.5.1 | 修复「文件浏览」按钮遮挡工作区「搜索会话」搜索框: 点击工作区顶部搜索图标展开搜索框时, 固定定位的入口按钮正好叠在搜索框上挡住输入; TopToggle 用 MutationObserver 监听搜索按钮 aria-expanded 状态(搜索按钮展开时带 aria-expanded="true" 且下一个兄弟元素为 input[type=text], 与会话行/分组折叠按钮可区分), 搜索框展开期间隐藏入口按钮、收起后自动恢复; Host 无改动, 纯 Client 能力, 安全审查持平 WARN(33/300) |
 | v1.5.0 | 静态 bundle 化: `package.json`(dsh.bundle.patch + dsh.client.platform)+ `cordis.patch.yml` + `lib/index.js`(webServer 挂三个 JSON 路由)+ `client/client.js`(__ModuleLoader__ 注册, host.call→fetch, styles→自建标签); 随 profile 层栈自动加载, 无需重启后手动 define/run; 动态形态源码保留为回退; 安全审查持平 WARN(33/300) |
 | v1.4.0 | 图标整体改用 Google Material Icons 官方库(Apache 2.0): 实心填充风格小尺寸下清晰, 符合 Chrome/Android 大厂标准; 关闭面板=keyboard_double_arrow_left(« 与 VS Code 一致)、工作区=workspaces、根目录=home、上一级=arrow_upward、刷新=refresh、资源管理器=folder_open、关闭预览=close; svgIcon 改 fill=currentColor, 默认尺寸 14→16px; Host 无改动, 安全审查持平 WARN(33/300) |

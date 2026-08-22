@@ -8,7 +8,7 @@
 双入口(侧栏顶部「文件浏览」胶囊 + 会话标题栏「打开目录」按钮)→ 320px 滑出面板,
 定位当前工作区目录,目录在前、文件在后,点击目录进入、点击文件预览文本内容。
 
-当前版本:`v1.5.1`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
+当前版本:`v1.5.2`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
 v1.1.0 起工具栏可一键在系统资源管理器中打开当前目录;v1.2.0 起预览文件时
 「添加到聊天」把文件引用 `[文件名](绝对路径)` 追加到聊天输入框草稿。
 
@@ -61,15 +61,19 @@ v1.1.0 起工具栏可一键在系统资源管理器中打开当前目录;v1.2.0
   `sidebar.footer.action`、`conversation.input.dock`),绝不替换内置 UI;纯 JS +
   `React.createElement`,禁 JSX/TS;内联样式保证深色主题下可见。调用 Host 用
   `host.call(method, args)`,只传可序列化 JSON。
-- **安全红线**:只声明 `CAPABILITIES: fs, rpc`;不引入网络请求、不 spawn 进程;
-  新增 RPC 前先过 `plugin_security_review`,保持 WARN 级(≈33/300);
-  优先复用 DSH 原生服务(如 `workspaces.openPath`)而非新增 Host RPC。
-- **行为细节**(v1.0.0~v1.2.1 已验证,改动需回归):
+- **安全红线**:只声明 `CAPABILITIES: fs, rpc`;不引入外部网络请求、不 spawn 进程;
+  新增 RPC 前先过 `plugin_security_review`,保持 WARN 级(≈33/300, v1.5.2 起 38/300);
+  优先复用 DSH 原生能力(如 `host.openPath`)而非新增 Host RPC。
+- **行为细节**(v1.0.0~v1.5.2 已验证,改动需回归):
   - 文件预览文本默认上限 256KB,最大 1MB,超限返回 `FS_TOO_LARGE` 明确提示;
   - 启动时序竞态防护:`useStore` 订阅后立即自愈同步当前状态;`sidebarWide` 默认 `true`;
   - 侧栏底部隐藏探针仅报告宽窄状态(渲染 null),不要让它产生可见 UI;
-  - 在系统资源管理器中打开(v1.1.0):Client 直接 `ctx.get('workspaces').openPath(path)`
-    (DSH 原生 host.openPath,Windows 走 Invoke-Item),不新增 Host RPC;
+  - 在系统资源管理器中打开(v1.1.0 起, v1.5.2 改道):Client **不要**调用
+    `ctx.get('workspaces').openPath(path)`——拦截型第三方插件(如 dsh-better-sidebar)
+    会 monkey-patch 该方法,把目录打开改道成「在侧边栏编辑器打开文件」并报
+    `"…" is a directory`;应直连 DSH 原生 `host.openPath`(`POST /api/host.openPath`,
+    官方 client-request 信封协议, 同源),`typeof fetch === 'function'` 时优先走原生
+    API、网络层失败或无 fetch 环境回退 `workspaces.openPath`;
   - 添加到聊天(v1.2.0/1.2.1):`conversation.input.dock` 插槽内的隐藏桥捕获标准包
     `inputActions`(setDraft)与 `useInput`(草稿订阅),把 `[文件名](绝对路径)` 追加到
     现有草稿、不覆盖;v1.2.1 起按钮保持常显、无「已添加」状态,支持连续多次添加。

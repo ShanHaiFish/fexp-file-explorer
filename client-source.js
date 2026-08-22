@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.5.1 (DSH 动态 Cordis 插件 · 回退形态)
+// 左侧文件浏览器 (fexp) — v1.5.2 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // v1.5.0 起主形态为静态 bundle(lib/index.js + client/client.js, 随 profile
@@ -13,6 +13,15 @@
 //   - 左侧 320px 浏览面板 (shell.overlay): 面包屑导航、目录列表、文件预览
 //   - 主题适配: 面板与按钮颜色全部使用主题 CSS 变量, 深浅色及任意主题
 //     下文字与背景都保持对比; SVG 矢量图标
+//
+// v1.5.2 修复:
+//   - 「在系统资源管理器中打开」被拦截型插件(如 dsh-better-sidebar)
+//     monkey-patch workspaces.openPath 后改道为「在侧边栏编辑器打开文件」,
+//     对目录报 "… is a directory"。修复: openInExplorer 优先直连 DSH 原生
+//     host.openPath(POST /api/host.openPath, 官方 client-request 信封协议,
+//     同源, 无新增 Host RPC/外部网络), 绕过被 patch 的通道; 运行环境无
+//     fetch 或网络层失败时回退原通道, 信封内业务错误如实报告; 工具栏按钮
+//     不再依赖 workspaces 存在。
 //
 // v1.5.1 修复:
 //   - 「文件浏览」按钮遮挡工作区「搜索会话」搜索框: 点击工作区顶部搜索图标
@@ -345,11 +354,60 @@ return {
       return null
     }
 
+    // 生成一次调用的 rpcId(官方 client-request 信封协议要求字符串 id)。
+    function fexpRpcId() {
+      return 'fexp-open-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
+    }
+
+    // 用系统资源管理器打开路径: 优先直连 DSH 原生 host.openPath(与官方
+    // client 相同的信封协议, POST /api/host.openPath), 绕过被第三方插件
+    // (如 dsh-better-sidebar) monkey-patch 的 workspaces.openPath —— 它的
+    // 拦截会把目录当作侧边栏编辑器文件打开并报 "… is a directory"。
+    // 运行环境无 fetch(受限 runner)或网络层失败时回退原通道; 信封内的
+    // 业务错误(如原生 opener 不可用)直接抛出报告。
+    async function nativeOpenPath(p) {
+      if (typeof fetch !== 'function') {
+        if (workspaces) await workspaces.openPath(p)
+        return
+      }
+      let response
+      try {
+        response = await fetch('/api/host.openPath', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            type: 'client-request',
+            rpcId: fexpRpcId(),
+            method: 'host.openPath',
+            payload: { path: p },
+          }),
+        })
+      } catch (err) {
+        if (workspaces) await workspaces.openPath(p)
+        return
+      }
+      if (!response.ok) {
+        if (workspaces) await workspaces.openPath(p)
+        return
+      }
+      let body
+      try {
+        body = await response.json()
+      } catch (err) {
+        if (workspaces) await workspaces.openPath(p)
+        return
+      }
+      const result = body && body.result
+      if (result && result.ok === true) return
+      const message = (result && result.error && result.error.message) ? result.error.message : 'path open failed'
+      throw new Error(message)
+    }
+
     async function openInExplorer(p) {
-      if (!workspaces || !p || state.opening) return
+      if (!p || state.opening) return
       setState({ opening: true, error: null })
       try {
-        await workspaces.openPath(p)
+        await nativeOpenPath(p)
       } catch (err) {
         setState({ error: String((err && err.message) || err) })
       } finally {
@@ -682,8 +740,8 @@ return {
           }, React.createElement(IconRefresh, null)),
           React.createElement('button', {
             type: 'button', className: 'fexp-tbtn',
-            title: workspaces ? '在系统资源管理器中打开当前目录' : '当前环境不支持在系统资源管理器中打开',
-            disabled: !path || !workspaces || opening,
+            title: '在系统资源管理器中打开当前目录',
+            disabled: !path || opening,
             onClick: () => openInExplorer(path),
           }, React.createElement(IconFolderOpen, null))),
         React.createElement('div', { className: 'fexp-crumbs' },
