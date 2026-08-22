@@ -9,7 +9,7 @@
 
 DSH(DeepSeek Harness)动态 Cordis 插件:在左侧工作区浏览目录与文件。双入口(侧栏顶部「文件浏览」胶囊 + 会话标题栏「打开目录」按钮)→ 320px 滑出面板,自动定位当前工作区目录,点击目录进入、点击文件预览文本内容;工具栏可一键在系统资源管理器中打开当前目录,预览时可把文件引用添加到聊天输入框。
 
-**v1.5.0 起为静态 bundle 插件,随 profile 层栈自动加载**——安装一次,每次启动 DSH 即自动生效,不再需要手动 define/run。
+**v1.5.0 起为静态 bundle 插件,随 profile 层栈自动加载**——安装一次,每次启动 DSH 即自动生效,不再需要手动 define/run。**v1.6.0 已发布到 npm**,`dsh plugin --profile web add fexp-file-explorer` 直接安装。
 
 ## 功能特性
 
@@ -44,11 +44,11 @@ DSH(DeepSeek Harness)动态 Cordis 插件:在左侧工作区浏览目录与文�
 ## 快速开始
 
 ```sh
-# 安装(静态 bundle, 推荐)
-dsh plugin --profile web add github:ShanHaiFish/fexp-file-explorer
+# 安装(静态 bundle, 推荐; 已发布到 npm)
+dsh plugin --profile web add fexp-file-explorer
 ```
 
-本地开发用 `file:` 指向本仓库(注意路径不能含空格):
+直接从源码安装(本地开发或未发布时, 注意路径不能含空格):
 
 ```sh
 dsh plugin --profile web add file:/path/to/fexp-file-explorer

@@ -35,11 +35,11 @@ A dynamic Cordis plugin for DSH (DeepSeek Harness) that browses workspace direct
 ## Quick Start
 
 ```sh
-# Install (static bundle, recommended)
-dsh plugin --profile web add github:ShanHaiFish/fexp-file-explorer
+# Install (static bundle, recommended; published to npm)
+dsh plugin --profile web add fexp-file-explorer
 ```
 
-For local development use `file:` pointing at this repository (the path must NOT contain spaces):
+For local development or unpublished copies use `file:` pointing at this repository (the path must NOT contain spaces):
 
 ```sh
 dsh plugin --profile web add file:/path/to/fexp-file-explorer
