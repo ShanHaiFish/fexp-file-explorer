@@ -1,5 +1,5 @@
 // ============================================================
-// 左侧文件浏览器 (fexp) — v1.6.0 (DSH 动态 Cordis 插件 · 回退形态)
+// 左侧文件浏览器 (fexp) — v1.6.1 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // v1.5.0 起主形态为静态 bundle(lib/index.js + client/client.js, 随 profile
@@ -403,48 +403,70 @@ return {
       return 'fexp-open-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
     }
 
-    // 用系统资源管理器打开路径: 优先直连 DSH 原生 host.openPath(与官方
-    // client 相同的信封协议, POST /api/host.openPath), 绕过被第三方插件
-    // (如 dsh-better-sidebar) monkey-patch 的 workspaces.openPath —— 它的
-    // 拦截会把目录当作侧边栏编辑器文件打开并报 "… is a directory"。
-    // 运行环境无 fetch(受限 runner)或网络层失败时回退原通道; 信封内的
-    // 业务错误(如原生 opener 不可用)直接抛出报告。
+    // 用系统资源管理器打开路径: 直连 DSH 原生 RPC 端点(与官方 client 相同
+    // 的信封协议), 绕过被第三方插件(如 dsh-better-sidebar) monkey-patch 的
+    // workspaces.openPath —— 它的拦截会把目录当作侧边栏编辑器文件打开并报
+    // "… is a directory"。
+    //
+    // 端点版本兼容: DSH 0.1.3+ 将 host 打开路径的 RPC 重构为 Typert Remote,
+    // 端点从 host.openPath 改为 session/openWorkspacePath(官方 client 走
+    // ctx.remote.session.openWorkspacePath({ path }), 实际发往
+    // POST /api/session/openWorkspacePath, payload 以 { args: { request } }
+    // 包装); 旧版 DSH 仍是 host.openPath。这里先试新端点, 收到明确业务错误
+    // 直接抛出并停止; 仅当端点不可达(404/网络/非 JSON)时才依次回退旧端点,
+    // 最后回退 workspaces.openPath(若该方法仍存在)。
     async function nativeOpenPath(p) {
       if (typeof fetch !== 'function') {
-        if (workspaces) await workspaces.openPath(p)
+        if (workspaces && typeof workspaces.openPath === 'function') await workspaces.openPath(p)
         return
       }
-      let response
-      try {
-        response = await fetch('/api/host.openPath', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            type: 'client-request',
-            rpcId: fexpRpcId(),
-            method: 'host.openPath',
-            payload: { path: p },
-          }),
-        })
-      } catch (err) {
-        if (workspaces) await workspaces.openPath(p)
+      const candidate = function (method, url, payload) {
+        return {
+          method,
+          async send() {
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ type: 'client-request', rpcId: fexpRpcId(), method, payload }),
+            })
+            if (!response.ok) return null // HTTP 非 2xx: 端点不可用, 交给下一个候选
+            let body
+            try {
+              body = await response.json()
+            } catch (err) {
+              return null // 非 JSON(如 404 的纯文本): 端点不可用, 交给下一个候选
+            }
+            const result = body && body.result
+            if (result && result.ok === true) return { ok: true }
+            // 端点可达但业务失败(如原生 opener 不可用): 直接抛, 不再降级
+            const message = (result && result.error && result.error.message)
+              ? result.error.message
+              : 'path open failed'
+            const err = new Error(message)
+            err.business = true
+            throw err
+          },
+        }
+      }
+      const attempts = [
+        candidate('session/openWorkspacePath', '/api/session/openWorkspacePath', { args: { request: { path: p } } }),
+        candidate('host.openPath', '/api/host.openPath', { path: p }),
+      ]
+      for (const attempt of attempts) {
+        try {
+          const out = await attempt.send()
+          if (out && out.ok === true) return
+        } catch (err) {
+          if (err && err.business) throw err // 端点有效但业务失败, 直接上报
+          // 网络层失败: 继续下一个候选
+        }
+      }
+      // 所有原生端点均不可用(network/404): 回退旧 workspaces 通道(若方法仍存在)
+      if (workspaces && typeof workspaces.openPath === 'function') {
+        await workspaces.openPath(p)
         return
       }
-      if (!response.ok) {
-        if (workspaces) await workspaces.openPath(p)
-        return
-      }
-      let body
-      try {
-        body = await response.json()
-      } catch (err) {
-        if (workspaces) await workspaces.openPath(p)
-        return
-      }
-      const result = body && body.result
-      if (result && result.ok === true) return
-      const message = (result && result.error && result.error.message) ? result.error.message : 'path open failed'
-      throw new Error(message)
+      throw new Error('无法打开资源管理器: 当前 DSH 未提供可用的打开路径端点')
     }
 
     async function openInExplorer(p) {

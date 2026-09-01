@@ -27,6 +27,8 @@ DSH(DeepSeek Harness)动态 Cordis 插件:在左侧工作区浏览目录与文�
 - **在系统资源管理器中打开**: 一键用系统资源管理器打开当前浏览的目录
   (DSH 原生 `host.openPath`, Windows 走 `Invoke-Item`; 直连原生 API
   `POST /api/host.openPath`, 避免被拦截型第三方插件把调用改道到文件编辑器)
+  — **v1.6.1**: 适配新版 DSH 的 `session/openWorkspacePath` Typert Remote 端点
+  (先试新端点, 不可达时回退旧 `host.openPath` 与 `workspaces.openPath`)
 - **添加到聊天(v1.6.0)**: 预览文件时把 DSH **@ 文件命令引用**追加到聊天输入框草稿
   (不覆盖已有内容), 可连续添加多个文件(空格分隔): 工作区 cwd 内的文件用
   相对路径(`@client/client.js` 形式), 工作区外保留绝对路径, 含空格路径按官方
@@ -160,6 +162,7 @@ dsh plugin --profile web add file:/path/to/fexp-file-explorer
 
 | 版本 | 说明 |
 | --- | --- |
+| v1.6.1 | 修复「在系统资源管理器中打开」在 DSH 版本升级后失效：新版 DSH(0.1.3+) 把该 Host RPC 从 `host.openPath` 重构为 Typert Remote 端点 `session/openWorkspacePath`（官方 client 走 `ctx.remote.session.openWorkspacePath({ path })`，实际 `POST /api/session/openWorkspacePath`，payload 以 `{ args: { request } }` 包装）；旧端点已不存在（404），回退通道 `workspaces.openPath` 也已从新版 client 移除。`nativeOpenPath` 改为先试新端点，收到明确业务错误直接抛出；端点不可达（404/网络/非 JSON）才回退旧端点与 `workspaces.openPath`（若存在）；安全审查持平 WARN(38/300) |
 | v1.6.0 | 「添加到聊天」改插 DSH @ 文件命令引用: 不再拼 `[文件名](绝对路径)` 长文本, 改为插入官方语法 `@相对路径`(工作区内)/`@绝对路径`(工作区外)/`@"带空格路径"`(含空格时); DSH 原生 FILE_REFERENCE_PROMPT 让模型按 @ 前缀理解并 read 读取; 连续添加多个以空格分隔; 输入框只显示短引用; 纯 Client 能力, 安全审查持平 WARN(38/300) |
 | v1.5.3 | 精简「打开资源管理器」按钮 hover 文字: 「在系统资源管理器中打开当前目录」(14 字) → 「打开资源管理器」(6 字), 与工具栏其他按钮 4~6 字风格一致; 纯文字改动无逻辑变化; 安全审查持平 WARN(38/300) |
 | v1.5.2 | 修复「在系统资源管理器中打开」被拦截型插件干扰: 装有 `dsh-better-sidebar`(默认拦截 `workspaces.openPath`)时, 该插件把调用改道为「在侧边栏编辑器打开文件」, 对目录报 `"<path>" is a directory`; `openInExplorer` 改为优先直连 DSH 原生 `host.openPath`(官方信封协议, `POST /api/host.openPath`, 同源, 无新增 Host RPC/外部网络), 绕过被 patch 的通道; 无 fetch 环境或网络层失败时回退原通道, 信封内业务错误如实报告; 工具栏按钮不再依赖 `workspaces` 存在; 安全审查 WARN(38/300) |
