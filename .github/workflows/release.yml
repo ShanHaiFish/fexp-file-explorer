@@ -24,10 +24,12 @@ jobs:
 
       - name: Validate sources
         run: |
+          # 完整模块: node --check
           node --check client/client.js
           node --check lib/index.js
-          node --check host-source.js
-          node --check client-source.js
+          # function-body 源码(cordis_define 的 code.host/code.client 函数体原文):
+          # 顶层是 return { apply(){} }, 不是完整模块, 需包进函数再校验语法。
+          node -e "const fs=require('fs'); for (const f of ['host-source.js','client-source.js']) { new Function(fs.readFileSync(f,'utf8')); console.log('syntax ok:', f); }"
           node -e "const m=require('./manifest.json'); const p=require('./package.json'); if(m.version!==p.version) throw new Error('version mismatch: manifest='+m.version+' pkg='+p.version); console.log('versions aligned:', p.version)"
 
       - name: Publish to npm
